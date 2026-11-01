@@ -7,7 +7,12 @@
 
 export type Variant = "main" | "promise";
 
-export type HotspotId = "tobin" | "mara" | "bakers" | "kids" | "lanterns" | "you";
+export type HotspotId = "tobin" | "mara" | "bakers" | "kids" | "lanterns" | "stone";
+export const HOTSPOT_IDS: readonly HotspotId[] = ["tobin", "mara", "bakers", "kids", "lanterns", "stone"];
+
+export function isHotspotId(id: string): id is HotspotId {
+  return (HOTSPOT_IDS as readonly string[]).includes(id);
+}
 
 export interface Hotspot {
   id: HotspotId;
@@ -43,11 +48,11 @@ const SHARED: Record<Exclude<HotspotId, "mara" | "lanterns">, Hotspot> = {
       "They're pointing at the red lantern still rolling toward the fountain. They think it's " +
       "the best thing that's happened all day.",
   },
-  you: {
-    id: "you",
-    name: "You",
-    shameView: "Everyone can see how clumsy and useless you are.",
-    fact: "A scraped palm and a hot face. You tripped on a loose stone. That is what happened.",
+  stone: {
+    id: "stone",
+    name: "The loose stone",
+    shameView: "You fell because you're clumsy and useless.",
+    fact: "A cobblestone sticks up by the fountain, loose. Anyone could trip on it. You tripped on it. That is what happened.",
   },
 };
 
@@ -58,7 +63,7 @@ export const HOTSPOTS: Record<Variant, Hotspot[]> = {
       id: "mara",
       name: "Mara",
       shameView: "She's disgusted. You've ruined her festival.",
-      fact: "She looked at the lanterns, then at you. She was halfway through saying \"Are you okay?\"",
+      fact: "She was asking everyone whether you were hurt. Worried about you, not angry, and not thinking about the lanterns.",
     },
     SHARED.bakers,
     SHARED.kids,
@@ -68,7 +73,7 @@ export const HOTSPOTS: Record<Variant, Hotspot[]> = {
       shameView: "Ruined. All of them.",
       fact: "Ten are fine. Two are dented. Paper and wire bend back.",
     },
-    SHARED.you,
+    SHARED.stone,
   ],
   promise: [
     SHARED.tobin,
@@ -77,8 +82,8 @@ export const HOTSPOTS: Record<Variant, Hotspot[]> = {
       name: "Mara",
       shameView: "She'll never trust you with anything again.",
       fact:
-        "She's looking at her grandmother's lantern with her hand over her mouth. She looks sad, " +
-        "not cruel. She hasn't said anything to you yet.",
+        "She's sad about her grandmother's lantern. She was also asking everyone whether you were hurt. " +
+        "Sad and worried, not cruel.",
     },
     SHARED.bakers,
     SHARED.kids,
@@ -90,7 +95,7 @@ export const HOTSPOTS: Record<Variant, Hotspot[]> = {
         "Eleven are fine. Mara's grandmother's lantern has a long tear down one side. It was on " +
         "top of the stack, where you put it after promising to carry it on its own.",
     },
-    SHARED.you,
+    SHARED.stone,
   ],
 };
 

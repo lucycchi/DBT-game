@@ -4,13 +4,16 @@ Browser game teaching DBT skills. Read `DESIGN.md` before doing design or
 gameplay work. It holds the decisions made so far and the first prototype spec.
 
 ## Current goal
-Build the first playable prototype (opposite action for shame, lantern festival
-scenario) as described in DESIGN.md.
+Ship Lantern Night for Game Week (due Thursday 2026-11-05, midnight) as an
+exploration/adventure game meeting the brief, without losing the DBT teaching.
 
 ## Stack
-- Ink for story/branching/state, run in the browser with inkjs
-- TypeScript for the meter, world-state visuals, and the check-the-facts scene
-- Keep it minimal: no game engine or heavy build tooling until the loop is playtested
+- Ink for story, dialogue, branching and choice state, run in the browser with inkjs
+- TypeScript game logic in `src/logic/` (pure, tested)
+- Phaser 3 for the walkable world (`src/game/`); HTML overlays for dialogue and panels
+- All art generated as SVG in code; all audio synthesized with Web Audio. No pre-made assets
+  (an assignment rule: docs/Game_Week_Assignment_PRD.pdf, kept out of git)
+- esbuild bundle, vitest tests, GitHub Pages deploy on push to main
 
 ## Rules
 - Keep game logic (emotion meter, fit-the-facts outcomes, world state) separate

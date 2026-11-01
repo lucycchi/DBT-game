@@ -7,6 +7,8 @@ import { canDecide, emotionFits, factsSupport, HOTSPOTS, initialFacts, inspect }
 import { buildChain } from "../src/logic/chain";
 import { applyEvent, initialState } from "../src/logic/state";
 import { parseSpoken, talkGroup } from "../src/logic/cast";
+import { groundY, laneBlocked, GROUND_Y, ZONES, USABLES, HOOKS, areaAt } from "../src/game/layout";
+import { heldHeadUp } from "../src/logic/outcome";
 
 const run = (m: MeterState, ...names: string[]) =>
   names.reduce((acc, n) => {
@@ -16,9 +18,9 @@ const run = (m: MeterState, ...names: string[]) =>
 
 describe("tags", () => {
   it("parses events with and without args, and scenes", () => {
-    expect(parseTags(["event: hide", "event: settle full", "scene: facts", "author: x"])).toEqual({
+    expect(parseTags(["event: hide", "event: settle full", "scene: approach", "author: x"])).toEqual({
       events: [{ name: "hide" }, { name: "settle", arg: "full" }],
-      scene: "facts",
+      scene: "approach",
     });
   });
 
@@ -66,10 +68,23 @@ describe("world", () => {
     expect(w).toMatchObject({ form: "shell", location: "cave" });
   });
 
-  it("morning brings you out of the shell and down to your lane", () => {
+  it("morning brings you out of the shell, still at the hollow", () => {
     let w = applyWorldEvent(initialWorld(), { name: "hide" });
     w = applyWorldEvent(w, { name: "morning" });
-    expect(w).toMatchObject({ form: "person", location: "lane" });
+    expect(w).toMatchObject({ form: "person", location: "cave" });
+  });
+
+  it("records facts found, once each, and rejects unknown ones", () => {
+    let w = applyWorldEvent(initialWorld(), { name: "fact", arg: "tobin" });
+    w = applyWorldEvent(w, { name: "fact", arg: "tobin" });
+    expect(w.factsFound).toEqual(["tobin"]);
+    expect(() => applyWorldEvent(w, { name: "fact", arg: "nobody" })).toThrow();
+  });
+
+  it("the candle lets you into the dark lane", () => {
+    const dark = { ...initialWorld(), time: "morning" as const, darkness: 2 };
+    expect(laneBlocked(dark)).toBe(true);
+    expect(laneBlocked(applyWorldEvent(dark, { name: "get", arg: "candle" }))).toBe(false);
   });
 
   it("darkness spreads up to a cap and a full ripple clears it", () => {
@@ -106,6 +121,12 @@ describe("outcome", () => {
     expect(outcome(true, true, true)).toBe("full");
     expect(outcome(true, false, true)).toBe("partial");
     expect(outcome(false, false, true)).toBe("minimal");
+  });
+
+  it("head up counts when held for most of the walk back", () => {
+    expect(heldHeadUp(7, 10)).toBe(true);
+    expect(heldHeadUp(3, 10)).toBe(false);
+    expect(heldHeadUp(0, 0)).toBe(false);
     expect(scoreParts([false, false, false])).toBe("minimal");
   });
 });
@@ -173,5 +194,21 @@ describe("dialogue", () => {
   it("groups the bakers and the kids for talking", () => {
     expect(talkGroup("wren")).toEqual(["oda"]);
     expect(talkGroup("mara")).toEqual([]);
+  });
+});
+
+describe("village layout", () => {
+  it("the hill rises smoothly to the hollow", () => {
+    expect(groundY(1000)).toBe(GROUND_Y);
+    expect(groundY(ZONES.hollow.x0)).toBeLessThan(GROUND_Y - 100);
+    expect(groundY(3700)).toBeLessThan(groundY(3500));
+  });
+
+  it("places are in the right areas", () => {
+    expect(areaAt(ZONES.home.x0).id).toBe("lane");
+    expect(areaAt(ZONES.fountain.x0).id).toBe("square");
+    expect(areaAt(ZONES.hollow.x0).id).toBe("hill");
+    expect(areaAt(USABLES.lantern_table.x).id).toBe("workshop");
+    expect(HOOKS.every((h) => areaAt(h.x).id === "square")).toBe(true);
   });
 });

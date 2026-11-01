@@ -1,83 +1,106 @@
-# Lantern Night (working title)
+# Lantern Night
 
-Browser prototype of a game that teaches the DBT skill **opposite action for shame**.
-Design decisions and the prototype spec are in [DESIGN.md](DESIGN.md). Content that needs a
-DBT clinician's sign-off is listed in [CLINICIAN_REVIEW.md](CLINICIAN_REVIEW.md). Who the
-villagers are, and the rules for writing their dialogue, are in [CHARACTERS.md](CHARACTERS.md).
+A short walkable adventure, about 15 minutes, set in a village on the night of its lantern
+festival. You promised to bring the lanterns. On the way across the square you trip, they
+scatter, and someone laughs. What happens next is up to you.
 
-Player-facing text never names DBT skills; it describes what each one is for (for example,
-"when a feeling doesn't match what happened, doing what it says keeps it going"). The DBT
-names stay in code comments and these docs. A test fails if a DBT term reaches the player.
+Underneath, it teaches one skill from DBT (dialectical behavior therapy): what to do when
+shame shows up. If the feeling doesn't match what actually happened, do the opposite of
+what it urges, all the way. If it does match, make things right. The game never names the
+skill. It shows what it's for.
 
-## Run it
+**Play it:** https://lucycchi.github.io/DBT-game/ (desktop browser, with sound).
+
+Design decisions are in [DESIGN.md](DESIGN.md), the cast and dialogue rules in
+[CHARACTERS.md](CHARACTERS.md), and content that needs a DBT clinician's sign-off in
+[CLINICIAN_REVIEW.md](CLINICIAN_REVIEW.md).
+
+## How to play
+
+| | |
+|---|---|
+| Walk | <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd>, or click where you want to go |
+| Talk, use things, go through doors | <kbd>E</kbd> or <kbd>Space</kbd> when a prompt appears, or click the person |
+| Read on in a conversation | <kbd>Space</kbd>, <kbd>Enter</kbd> or click; number keys pick answers |
+| Keep your head up (walking back) | hold <kbd>Shift</kbd>, or hold the on-screen Head up button |
+
+The goal and what to do next are always shown in the top left. People with a speech bubble
+want to talk.
+
+## The journey
+
+Four connected areas you can walk between and come back to: **Lantern Lane** (your house,
+Nell), **Market Street** (the bakery, Ash's tea cart, the lantern workshop you can go
+inside), **The Square** (the fountain and the lantern string), and **The Hill** with the
+hollow at the top.
+
+1. **Afternoon.** Fetch the lanterns from the workshop, talk to anyone you like, carry them
+   to the fountain. You trip.
+2. **The fall.** Your body reacts; you name the feeling. The pull to hide literally drags you
+   toward the hollow. Hiding turns you into a shell creature, and the relief is real.
+3. **If you hid:** night falls with the square dark, Ash checks on you, you overhear Mara
+   and Tobin each blaming themselves. In the morning your invitation is missing and your
+   lane has gone too dark to walk. Ash gives you a candle, and the lane opens again.
+4. **Finding out what happened.** The village is drawn the way the feeling sees it: a red
+   haze, everyone pointing. Talk to people and look around the fountain. Each fact you find
+   frees someone from the haze. After three, sit on the fountain wall and decide whether
+   the feeling matches what happened.
+5. **Walking back** (it doesn't match). The pull to hide drags you toward the hollow while
+   you walk to Mara. Holding your head up makes you stronger against it, and the meter
+   climbs before it falls. Then you choose what to say.
+   **Making it right** (it matches). Walk back, own what happened, then mend the torn lantern
+   in a small puzzle (or straighten the dented ones), then let it be done.
+6. **Hanging the lanterns.** Walk under each of the 12 hooks and hang a lantern. At sundown
+   they light one by one. How far the light reaches depends on how fully you went back.
+7. **The festival.** Everyone has something to say, depending on what you did. Walk home.
+8. **Looking back.** A short timeline of your day; tap any moment to see what doing
+   something different there would change.
+
+Nothing is scored. The village shows the costs and the recoveries, and it can always recover.
+
+The borrowed-lantern story (second button on the title screen) changes one thing: you
+promised to carry Mara's grandmother's lantern on its own, and it tore. Here the feeling
+does match, and making it right is the skill that fits.
+
+## Run it locally
 
 ```bash
 npm install
-npm run dev        # compiles the Ink story, bundles TS, serves http://localhost:8000
+npm run dev        # compiles the story, bundles, serves http://localhost:8000
+npm test           # logic tests, plus the real story played through every branch
+npm run typecheck
 ```
 
-`npm run build` writes `public/festival.json` and `public/main.js`; `public/` is then a static
-site. `npm test` runs the logic tests and plays the real story through every branch.
-`npm run typecheck` runs `tsc`.
+`npm run build` writes `public/festival.json` and `public/main.js`; `public/` is the whole
+site. Pushing to `main` runs the tests and deploys to GitHub Pages
+(`.github/workflows/pages.yml`).
 
-Open with `?variant=promise` to skip the title card and start the variant.
+Add `?variant=promise` to skip the title screen into the borrowed-lantern story. Add
+`?debug` to expose `window.lantern` for automated playtesting.
 
 ## How it's put together
 
 | Layer | Where | What it owns |
 |---|---|---|
-| Story | `story/festival.ink` | Text, dialogue, branching, choice variables. Emits `#event:` and `#scene:` tags; `#talk:` tags on choices link them to a villager. |
-| Engine | `src/engine.ts` | Steps inkjs line by line, parses tags, binds TS logic as Ink external functions. No DOM. |
-| Game logic | `src/logic/` | Emotion meter, world state (including each character's face), fit-the-facts, opposite-action scoring, chain review, the cast and dialogue parsing. Pure functions, no DOM. |
-| Views | `src/ui/` | SVG village and character art (`characters.ts`), meter bars and curve, story text with portraits, interactive scenes. Read state only. |
-| Glue | `src/main.ts` | Feeds story events into logic, logic state into views. |
+| Story | `story/festival.ink` | All text and dialogue, branching, choice variables. Choices are tagged with where they live in the world (`#talk`, `#go`, `#use`); lines carry `#event` and `#scene` tags. |
+| Engine | `src/engine.ts` | Steps inkjs line by line, parses tags and dialogue, binds TS logic as Ink functions. No DOM. |
+| Game logic | `src/logic/` | Emotion meter, world state, finding facts and whether the feeling fits, scoring how fully a skill was done, looking back, the cast. Pure functions, no DOM. |
+| World | `src/game/` | Phaser 3 scene: walking, camera, doors, villagers, light and dark, the walk-back and lantern-hanging challenges (`WorldScene.ts`); village layout as plain data (`layout.ts`); every image, generated as SVG (`art.ts`). |
+| Audio | `src/audio/sound.ts` | Generated music for each mood (day, night, the red haze, the hollow, the festival) and all sound effects, synthesized with the Web Audio API. |
+| Overlays | `src/ui/` | Dialogue box with portraits, goal and controls, the meter, the decision, mending and look-back panels, character art (`characters.ts`). |
+| Director | `src/main.ts` | Runs the story, applies events to logic, hands state to the world and overlays, routes choices to the world or the dialogue box. |
 
-A later Phaser or Godot front end would replace `src/ui/` and `src/main.ts`; the story and
-logic stay as they are.
-
-## Talking to people
-
-Villagers with a speech bubble over their head can be talked to: click them, or pick "Talk to
-..." from the list. Conversations are written in Ink (`id: text` or `id/expression: text`
-lines), so every line can be reviewed. There are four rounds: the afternoon before the fall,
-the night in the hollow (Ash), the morning after hiding, and the festival evening. What people
-say depends on what you did.
-
-## The loop (from DESIGN.md)
-
-1. Trip, lanterns scatter, someone laughs. Body cues arrive; the player names the emotion.
-   Any label is allowed; non-shame labels get a description of that emotion's urge and the
-   option to look again or keep the label.
-2. **Hide** turns the player into a shell creature in a hollow. Distress drops right away.
-3. Costs arrive through the world: square stays dark, Mara assumes you're angry, the next
-   morning's invitation is missing, darkness spreads up your lane. Hiding can repeat.
-4. **Check the facts** (shown to the player as "think back over what actually happened"): the square is first drawn as shame sees it (red vignette, everyone
-   pointing). Inspecting at least three details flips each one to what actually happened.
-   Two questions (would people reject you; did you act against your values) decide fit.
-5. Doesn't fit → **opposite action** ("do the opposite, all the way") in three parts: go back, head up, steady voice.
-   Fits → **repair** ("make it right"): own it, amends, let it go. Each part done pushes distress up first.
-   Leaving a part out gives a partial result. The hollow stays available mid-way.
-6. Ripple: lanterns light one by one, light reaches your lane, the invitation arrives. The
-   festival evening follows, with everyone to talk to.
-7. **Chain review** ("think back over the day"): tap any moment to see what a different
-   choice there changes.
-
-There is no typing anywhere in the game. The transfer question (coworker ignores you in a
-meeting) is no longer in the game; the facilitator asks it out loud after play. See DESIGN.md.
-
-Variant ("the borrowed lantern"): you promised Mara you'd carry her grandmother's lantern on
-its own, stacked it anyway, and it tore. Here the facts support guilt/shame fitting, so
-repair is the matching skill.
+No asset in the game is pre-made: buildings, characters, lanterns, the sky, music and
+sound effects are all generated by the code in `src/game/art.ts`, `src/ui/characters.ts`
+and `src/audio/sound.ts`.
 
 ## Playtesting
 
-At the end, **Download playtest notes** saves a JSON log of every choice, event, inspected
-detail, fit answer, and chain tap, with timestamps. The log lives only
-in memory, so download it before reloading or starting the next participant. Nothing is
-stored in the browser or sent anywhere.
+**Download playtest notes** at the end saves a JSON log of every choice, event, fact found,
+how the walk back went (reached Mara or not, head up or not, turned back or not), the
+decision answers and which moments were tapped when looking back. The log is kept only in
+memory; download it before reloading.
 
-Things the log answers directly (see "What the prototype must show" in DESIGN.md):
-- Did they hide, how many times, and did they bail out partway back (`hide_count`, `bailed`
-  in `chain_record`)?
-- Did they push through the rise in distress (`completeness`)?
-- Who did they talk to (`choice` entries starting "Talk to")?
+After play, ask the transfer question out loud (DESIGN.md): *"In a meeting, you share an
+idea and a coworker moves on without responding. Your face goes hot and you want to skip
+the team lunch. Would doing the opposite apply here? Why or why not?"*

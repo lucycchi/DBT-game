@@ -1,5 +1,6 @@
 // Plays the real Ink story through the engine: scripted paths for the key
-// branches, plus random walks to check every branch ends and every tag is known.
+// branches, plus random walks to check every branch ends, every tag is known,
+// and every world choice points at a place, thing or person that exists.
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -7,11 +8,14 @@ import { Compiler } from "inkjs/full";
 import { Engine, type StoryLine } from "../src/engine";
 import { applyEvent, initialState, type GameState } from "../src/logic/state";
 import type { Variant } from "../src/logic/facts";
+import { USABLES, ZONES } from "../src/game/layout";
 
 const json = new Compiler(readFileSync("story/festival.ink", "utf8")).Compile().ToJson()!;
 
 interface SceneAnswers {
   fit: boolean;
+  /** Results of each walk back, in order. Defaults to all the way, head up. */
+  approaches?: { reached: boolean; headUp: boolean; turnedBack: boolean }[];
 }
 
 interface Run {
@@ -22,8 +26,18 @@ interface Run {
   choicesTaken: string[];
 }
 
+function handleScene(engine: Engine, scene: string, answers: SceneAnswers) {
+  if (scene === "fit") engine.setVar("fit", answers.fit);
+  if (scene === "approach") {
+    const a = answers.approaches?.shift() ?? { reached: true, headUp: true, turnedBack: false };
+    engine.setVar("reached", a.reached);
+    engine.setVar("head_up", a.headUp);
+    engine.setVar("turned_back", a.turnedBack);
+  }
+}
+
 /** Play the story, picking choices by matching text fragments in order. */
-function play(variant: Variant, picks: (string | number)[], answers: SceneAnswers): Run {
+function play(variant: Variant, picks: string[], answers: SceneAnswers): Run {
   const engine = new Engine(json, variant);
   const run: Run = { lines: [], state: initialState(), engine, scenes: [], choicesTaken: [] };
   const queue = [...picks];
@@ -36,23 +50,14 @@ function play(variant: Variant, picks: (string | number)[], answers: SceneAnswer
     const last = batch[batch.length - 1];
     if (last?.scene) {
       run.scenes.push(last.scene);
-      if (last.scene === "facts") {
-        engine.setVar("facts_done", true);
-        engine.setVar("facts_seen", 4);
-        engine.setVar("fit", answers.fit);
-      }
+      handleScene(engine, last.scene, answers);
       engine.choose(0);
       continue;
     }
     if (engine.ended) return run;
     const pick = queue.shift();
-    if (pick === undefined) {
-      throw new Error(`Ran out of picks at: ${engine.choices.map((c) => c.text).join(" | ")}`);
-    }
-    const choice =
-      typeof pick === "number"
-        ? engine.choices[pick]
-        : engine.choices.find((c) => c.text.toLowerCase().includes(pick.toLowerCase()));
+    if (pick === undefined) throw new Error(`Ran out of picks at: ${engine.choices.map((c) => c.text).join(" | ")}`);
+    const choice = engine.choices.find((c) => c.text.toLowerCase().includes(pick.toLowerCase()));
     if (!choice) throw new Error(`No choice matching "${pick}" in: ${engine.choices.map((c) => c.text).join(" | ")}`);
     run.choicesTaken.push(choice.text);
     engine.choose(choice.index);
@@ -65,55 +70,57 @@ const DBT_TERMS = /opposite action|check(ing)? the facts|chain analysis|\bDBT\b|
 
 const text = (r: Run) => r.lines.map((l) => l.text).join("\n");
 
-describe("story: stay, shame does not fit, opposite action all the way", () => {
-  const run = play("main", ["talk to tobin", "what happened", "carry", "shame", "stay", "all the way", "keep going", "lift", "spectacular", "talk to mara", "okay", "head home"], { fit: false });
+const FACTS_TRIO = ["ask tobin", "ask the kids", "laughing at me", "cobblestones", "sit on the fountain"];
 
-  it("reaches every scene and ends", () => {
-    expect(run.scenes).toEqual(["facts", "chain"]);
+describe("story: stay, the feeling doesn't fit, all the way back", () => {
+  const run = play(
+    "main",
+    ["talk to tobin", "what happened", "pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular", "talk to mara", "okay", "walk home"],
+    { fit: false },
+  );
+
+  it("runs every challenge and ends", () => {
+    expect(run.scenes).toEqual(["fit", "approach", "hang", "chain"]);
     expect(run.state.world.ended).toBe(true);
   });
 
-  it("parses dialogue and gives speakers their expressions", () => {
-    const tobin = run.lines.find((l) => l.spoken?.speaker === "tobin" && l.spoken.expression === "sad");
-    expect(tobin?.text).toMatch(/Loose cobblestone/);
-    expect(run.state.world.faces.mara).toBe("smile");
+  it("the pull to hide lets go once you've chosen to stay", () => {
+    expect(run.state.world.pull).toBe(false);
   });
 
-  it("talk choices are tagged with who they're for", () => {
-    const engine = new Engine(json, "main");
-    engine.continueBatch();
-    expect(engine.choices.filter((c) => c.talkTo).map((c) => c.talkTo)).toEqual(["mara", "tobin", "wren", "pip", "nell", "ash"]);
+  it("finds facts by exploring", () => {
+    expect(run.state.world.factsFound).toEqual(["tobin", "kids", "stone"]);
+    expect(run.engine.getVar("facts_seen")).toBe(3);
   });
 
-  it("talking is optional and once per character per scene", () => {
-    expect(run.choicesTaken.filter((c) => c === "Talk to Tobin")).toHaveLength(1);
-  });
-
-  it("raises distress during opposite action before it falls", () => {
+  it("raises distress during the walk back before it falls", () => {
     const h = run.state.meter.history;
     const peak = Math.max(...h);
-    const peakAt = h.lastIndexOf(peak);
-    expect(peak).toBeGreaterThan(80);
-    expect(h[h.length - 1]).toBeLessThan(peak - 50);
-    expect(peakAt).toBeLessThan(h.length - 1);
+    expect(h.lastIndexOf(peak)).toBeLessThan(h.length - 1);
+    expect(h[h.length - 1]).toBeLessThan(peak - 40);
   });
 
   it("lights the square and brings the invitation", () => {
     expect(run.engine.getVar("completeness")).toBe("full");
     expect(run.state.world).toMatchObject({ squareLight: 1, darkness: 0, lanternsHung: 12, invitation: "received" });
   });
+
+  it("parses dialogue and gives speakers their expressions", () => {
+    const tobin = run.lines.find((l) => l.spoken?.speaker === "tobin" && l.spoken.expression === "sad");
+    expect(tobin?.text).toMatch(/Loose cobblestone/);
+  });
 });
 
 describe("story: hiding", () => {
   const run = play(
     "main",
-    ["carry", "anger", "look again", "shame", "hide", "rest", "stay quiet", "sleep", "talk to the kids", "laughing at me", "go back to the hollow", "rest", "sleep", "think back", "all the way", "keep going", "eyes on the ground", "nothing", "head home"],
-    { fit: false },
+    ["pick up", "carry", "anger", "look again", "shame", "hide", "rest", "stay quiet", "sleep", "go back to the hollow", "rest", "sleep", "talk to ash", "talk to nell", "angry", "ask the kids", "laughing at me", "ask tobin", "sit on the fountain", "nothing", "walk home"],
+    { fit: false, approaches: [{ reached: false, headUp: false, turnedBack: false }] },
   );
 
   it("gives real relief right away", () => {
     const h = run.state.meter.history;
-    const afterTrip = Math.max(...h.slice(0, 12));
+    const afterTrip = Math.max(...h.slice(0, 14));
     expect(Math.min(...h.slice(0, 20))).toBeLessThan(afterTrip - 40);
   });
 
@@ -121,80 +128,99 @@ describe("story: hiding", () => {
     const t = text(run);
     expect(t).toMatch(/Yours doesn't/);
     expect(t).toMatch(/must be angry with me/);
-    expect(t).toMatch(/We were watching the lantern/);
     expect(t).not.toMatch(/\b(bad|wrong|good job|should have|failed)\b/i);
+  });
+
+  it("Ash's candle opens the dark lane, where Nell has a fact", () => {
+    expect(run.state.world.hasLight).toBe(true);
+    expect(run.state.world.factsFound).toContain("mara");
   });
 
   it("partial execution gives a partial result", () => {
     expect(run.engine.getVar("hide_count")).toBe(2);
     expect(run.engine.getVar("completeness")).toBe("minimal");
+    expect(run.scenes).not.toContain("hang");
     expect(run.state.world.squareLight).toBeLessThan(1);
   });
 });
 
-describe("story: promise variant, emotion fits, repair", () => {
-  const run = play("promise", ["carry", "guilt", "stay", "i stacked", "stay", "fix it together", "let it be done", "talk to mara", "nod", "head home"], { fit: true });
+describe("story: borrowed lantern, the feeling fits, making it right", () => {
+  const run = play("promise", ["pick up", "carry", "guilt", "stay", ...FACTS_TRIO, "i stacked", "fix it together", "let it be done", "talk to mara", "nod", "walk home"], { fit: true });
 
   it("mends the heirloom and recovers fully", () => {
+    expect(run.scenes).toEqual(["fit", "approach", "mend", "hang", "chain"]);
     expect(run.engine.getVar("path")).toBe("repair");
     expect(run.engine.getVar("completeness")).toBe("full");
     expect(run.state.world).toMatchObject({ heirloom: "mended", lanternsHung: 12, squareLight: 1 });
   });
 });
 
-describe("story: bailing out partway can still recover", () => {
+describe("story: turning back on the walk can still recover", () => {
   const run = play(
     "main",
-    ["carry", "not sure", "stay", "edge", "hide after all", "rest", "i'm here", "sleep", "think back", "all the way", "keep going", "lift", "spectacular", "head home"],
-    { fit: false },
+    ["pick up", "carry", "not sure", "stay", ...FACTS_TRIO, "rest", "here", "sleep", "sit on the fountain", "spectacular", "walk home"],
+    { fit: false, approaches: [{ reached: false, headUp: false, turnedBack: true }] },
   );
 
-  it("skips the facts scene the second time and ends fully recovered", () => {
-    expect(run.scenes).toEqual(["facts", "chain"]);
+  it("hides, comes back, and ends fully recovered", () => {
     expect(run.engine.getVar("bailed")).toBe(true);
+    expect(run.scenes.filter((s) => s === "approach")).toHaveLength(2);
     expect(run.state.world.squareLight).toBe(1);
+  });
+});
+
+describe("story: structure", () => {
+  it("the afternoon offers people to talk to and the workshop", () => {
+    const engine = new Engine(json, "main");
+    engine.continueBatch();
+    const targets = engine.choices.map((c) => c.target);
+    expect(targets).toContainEqual({ kind: "use", id: "lantern_table" });
+    expect(targets.filter((t) => t?.kind === "talk").map((t) => t!.id)).toEqual(["nell", "ash", "wren", "tobin", "mara", "pip"]);
   });
 });
 
 describe("story: random walks", () => {
   // Seeded so failures reproduce.
   let seed = 42;
-  const rand = () => ((seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+  const rand = () => (seed = (seed * 1103515245 + 12345) % 2 ** 31) / 2 ** 31;
 
-  it("every path ends, and every tag is a known event", () => {
+  it("every path ends, every tag is known, every world choice exists, no DBT terms reach the player", () => {
     for (let i = 0; i < 300; i++) {
       const variant: Variant = i % 2 ? "main" : "promise";
       const engine = new Engine(json, variant);
       let state = initialState();
       let steps = 0;
       while (!engine.ended) {
-        if (++steps > 400) throw new Error("walk did not end");
+        if (++steps > 600) throw new Error("walk did not end");
         const batch = engine.continueBatch();
         for (const line of batch) {
-          // Anything shaped like dialogue must be a known speaker.
           if (/^[a-z]+(\/[a-z]+)?: /.test(line.text)) throw new Error(`Unparsed dialogue: ${line.text}`);
           expect(line.text).not.toMatch(DBT_TERMS);
+          for (const ev of line.events) state = applyEvent(state, ev);
         }
-        for (const c of engine.choices) expect(c.text).not.toMatch(DBT_TERMS);
-        for (const line of batch) for (const ev of line.events) state = applyEvent(state, ev);
         const last = batch[batch.length - 1];
         if (last?.scene) {
-          if (last.scene === "facts") {
-            engine.setVar("facts_done", true);
-            engine.setVar("fit", rand() < 0.5);
-          }
+          handleScene(engine, last.scene, {
+            fit: rand() < 0.5,
+            approaches: [{ reached: rand() < 0.7, headUp: rand() < 0.6, turnedBack: rand() < 0.15 }],
+          });
           engine.choose(0);
           continue;
         }
         if (engine.ended) break;
-        // Lean away from hiding so walks finish in a sensible number of steps.
         const choices = engine.choices;
+        for (const c of choices) {
+          expect(c.text).not.toMatch(DBT_TERMS);
+          if (c.target?.kind === "go") expect(ZONES).toHaveProperty(c.target.id);
+          if (c.target?.kind === "use") expect(USABLES).toHaveProperty(c.target.id);
+        }
+        // Lean away from hiding so walks finish in a sensible number of steps.
         const nonHide = choices.filter((c) => !/hollow|hide/i.test(c.text));
-        const pool = rand() < 0.8 && nonHide.length ? nonHide : choices;
+        const pool = rand() < 0.85 && nonHide.length ? nonHide : choices;
         engine.choose(pool[Math.floor(rand() * pool.length)].index);
       }
       expect(state.world.ended).toBe(true);
       expect(["full", "partial", "minimal"]).toContain(engine.getVar("completeness"));
     }
-  });
+  }, 60_000);
 });

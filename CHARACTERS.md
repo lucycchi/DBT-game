@@ -47,7 +47,7 @@ rock. Ash treats rest as allowed and is still glad when you come back.
 
 | When | Who | What changes |
 |---|---|---|
-| Afternoon, before the fall | Mara, Tobin, the bakers, the kids, Nell, Ash | Sets up who people are. Tobin mentions his own fall. |
+| Afternoon, before the fall | Nell (lane), Ash and the bakers (street), Tobin (inside the workshop), Mara and the kids (square) | Sets up who people are. Tobin mentions his own fall. |
 | Night, if you hid | Ash at the hollow; Mara and Tobin overheard | Ash checks on you; Mara and Tobin each think it was their fault. |
-| Morning, if you hid | Nell, Ash, the bakers, the kids | Each one quietly hands you a fact: they didn't see, they were watching the lantern, Mara thinks you're angry. |
+| Finding out what happened | Tobin, the bakers, the kids, plus Nell (if you hid; behind the dark lane) or Ash (if you stayed) | Each conversation is a fact: Tobin fell too, the bakers didn't see, the kids watched the lantern, Mara was worried. Ash gives you a candle if you hid. |
 | Festival evening | Everyone | Reactions depend on what you did and how fully you did it. |

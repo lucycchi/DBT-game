@@ -16,11 +16,30 @@ export interface StoryLine {
   scene: SceneName | null;
 }
 
+/** Where a choice lives in the world, from a tag inside its brackets. */
+export type ChoiceTarget =
+  | { kind: "talk"; id: CharacterId } // `#talk: mara`: walk up to Mara and talk
+  | { kind: "go"; id: string } //        `#go: hollow`: walk into that place
+  | { kind: "use"; id: string }; //      `#use: stone`: walk up to that thing and use it
+
 export interface StoryChoice {
   index: number;
   text: string;
-  /** From a `#talk: id` choice tag: choosing this starts a conversation with that character. */
-  talkTo: CharacterId | null;
+  target: ChoiceTarget | null;
+}
+
+export function parseChoiceTarget(tags: readonly string[] | null | undefined): ChoiceTarget | null {
+  for (const tag of tags ?? []) {
+    const m = /^\s*(talk|go|use)\s*:\s*(\w+)\s*$/.exec(tag);
+    if (!m) continue;
+    const [, kind, id] = m;
+    if (kind === "talk") {
+      if (!isCharacterId(id)) throw new Error(`Unknown character in #talk: ${id}`);
+      return { kind, id };
+    }
+    return { kind: kind as "go" | "use", id };
+  }
+  return null;
 }
 
 type InkValue = string | number | boolean;
@@ -53,10 +72,7 @@ export class Engine {
   }
 
   get choices(): StoryChoice[] {
-    return this.story.currentChoices.map((c) => {
-      const tag = (c.tags ?? []).map((t) => /^\s*talk\s*:\s*(\w+)\s*$/.exec(t)?.[1]).find(Boolean);
-      return { index: c.index, text: c.text, talkTo: tag && isCharacterId(tag) ? tag : null };
-    });
+    return this.story.currentChoices.map((c) => ({ index: c.index, text: c.text, target: parseChoiceTarget(c.tags) }));
   }
 
   choose(index: number): void {

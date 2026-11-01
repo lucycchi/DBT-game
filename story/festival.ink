@@ -2,24 +2,32 @@
 // (DBT: opposite action, check the facts, repair. Player-facing text never uses
 // those names; it describes what each skill is for.)
 //
-// Tags drive the TypeScript layer:
+// The player walks a side-scrolling village. Ink is the authority on what can
+// happen next; the game maps choices onto the world:
+//   [Text #talk: id]     walk up to that character and talk
+//   [Text #go: place]    walk into that place (fountain, hollow, bench, home)
+//   [Text #use: thing]   walk up to that thing and use it (lantern_table, stone, heap)
+//   [Text]               a plain choice, shown as a button in the dialogue box
+// Line tags:
 //   #event: name [arg]   world and meter changes (src/logic/world.ts, meter.ts)
-//   #scene: name         interactive TS scene; the TS layer picks the single
-//                        placeholder choice that follows when the scene is done.
-//   [Choice #talk: id]   inside the brackets: clicking that character picks it.
+//   #scene: name         a TS challenge (fit, approach, mend, hang, chain); the TS
+//                        layer picks the single placeholder choice that follows.
 // Dialogue lines are `id: text` or `id/expression: text` (src/logic/cast.ts).
 // Choice text in quotes is shown as the player's own spoken line.
 // Characters and dialogue rules: CHARACTERS.md. Never frame choices as good or bad.
 
 VAR variant = "main"      // "main" | "promise", set by the TS layer before start
 VAR label = ""
+VAR have_lanterns = false
 VAR hide_count = 0
 VAR stayed = false
 VAR bailed = false
 VAR answered_ash = false
-VAR facts_done = false    // set by the facts scene
-VAR facts_seen = 0        // set by the facts scene
-VAR fit = false           // set by the facts scene
+VAR facts_seen = 0
+VAR fit = false           // set by the fit scene
+VAR reached = false       // set by the approach scene: got all the way to Mara
+VAR head_up = false       // set by the approach scene: kept head up most of the way
+VAR turned_back = false   // set by the approach scene: walked into the hollow instead
 VAR path = ""             // "opposite" | "repair"
 VAR part_a = false        // opposite: go back    | repair: own it
 VAR part_b = false        // opposite: head up    | repair: make it right
@@ -31,51 +39,55 @@ EXTERNAL outcome(a, b, c)
 -> start
 
 === start ===
-The village is getting ready for the lantern festival. #event: afternoon
-Tonight is the first night. At sundown, every lantern in the square gets lit at once.
-You offered to bring the twelve lanterns from the workshop. They're stacked in your arms, all in one trip, to save time.
+Lantern Lane, the afternoon of the festival. #event: afternoon
+Tonight at sundown, every lantern in the square gets lit at once. You promised to bring them.
 { variant == "promise":
-    This morning Mara put her grandmother's paper lantern in your hands. "Carry this one on its own," she said. "It's the oldest thing I have." You promised you would.
-    It's balanced on top of the stack now. It's just quicker this way.
+    This morning Mara asked you to carry her grandmother's paper lantern on its own. "It's the oldest thing I have." You promised.
 }
-The square is busy. You can stop and talk, or head straight across.
--> before
+They're waiting on the bench in the lantern workshop, on Market Street.
+-> afternoon
 
-=== before ===
+=== afternoon ===
 - (hub)
-+ {not mara_before} [Talk to Mara #talk: mara]
-    -> mara_before -> hub
-+ {not tobin_before} [Talk to Tobin #talk: tobin]
-    -> tobin_before -> hub
++ {not have_lanterns} [Pick up the lanterns in the workshop #use: lantern_table]
+    -> pick_up -> hub
++ {not nell_before} [Talk to Nell #talk: nell]
+    -> nell_before -> hub
++ {not ash_before} [Talk to Ash #talk: ash]
+    -> ash_before -> hub
 + {not bakers_before} [Talk to the bakers #talk: wren]
     -> bakers_before -> hub
++ {not tobin_before} [Talk to Tobin #talk: tobin]
+    -> tobin_before -> hub
++ {not mara_before} [Talk to Mara #talk: mara]
+    -> mara_before -> hub
 + {not kids_before} [Talk to the kids #talk: pip]
     -> kids_before -> hub
-+ {not nell_before} [Talk to Nell, on her front step #talk: nell]
-    -> nell_before -> hub
-+ {not ash_before} [Talk to Ash, at the tea cart #talk: ash]
-    -> ash_before -> hub
-+ [Carry the lanterns across the square] -> trip
++ {have_lanterns} [Carry the lanterns to the fountain #go: fountain] -> trip
 
-=== mara_before ===
-mara/worried: There you are. Okay. Okay. Lanterns, then bread, then candles, then... okay.
+=== pick_up ===
+~ have_lanterns = true
+Twelve lanterns. You stack them in your arms, all in one trip, to save time. #event: carry
 { variant == "promise":
-    She's too busy to look at the stack. Her grandmother's lantern sways on top.
+    Her grandmother's lantern goes on top. It's just quicker this way.
 }
-+ ["Breathe. It's going to be lovely."]
-    mara/smile: Tell me that again at sundown.
-+ ["Where do you want them?"]
-    mara: Middle of the square, by the fountain. Thank you. Really.
+->->
+
+=== nell_before ===
+nell/smile: Look at you. Off to fetch the lanterns?
+nell: Sixty-one festivals I've watched from this step. Somebody always drops something.
++ ["Not me. Not today."]
+    nell/laugh: That's what they all say.
++ ["Sixty-one? Which was the best?"]
+    nell/warm: The year it poured and not one lantern would light. We all sat in the bakery till morning. Best one.
 - ->->
 
-=== tobin_before ===
-tobin/laugh: Careful with those! Ha. Listen to me, saying careful.
-There's dust on his knees, and a cracked lantern on his cart.
-+ ["What happened to you?"]
-    tobin/sad: Loose cobblestone by the fountain. Went down in front of everyone this morning. Took a whole string of bunting with me.
-    tobin/laugh: I've been laughing about it all day, so nobody else gets to first.
-+ ["Your lantern's cracked."]
-    tobin/sad: Yeah. One of mine. Don't tell Mara.
+=== ash_before ===
+ash/smile: Tea when you're done? I'm saving you the chipped cup. It's your favorite, don't argue.
++ ["Save it. I'll be back before sundown."]
+    ash: I'll hold you to it.
++ ["You could help me carry them."]
+    ash/laugh: And leave the tea alone? Wren would drink all of it.
 - ->->
 
 === bakers_before ===
@@ -91,36 +103,40 @@ oda: Don't mind us. We do this every year.
     They're already back to arguing.
 - ->->
 
+=== tobin_before ===
+{ have_lanterns:
+    tobin/laugh: Careful with those! Ha. Listen to me, saying careful.
+- else:
+    tobin/smile: They're all on the bench. Twelve. I counted, so Juno doesn't have to.
+}
+There's dust on his knees, and a cracked lantern by his elbow.
++ ["What happened to you?"]
+    tobin/sad: Loose cobblestone by the fountain. Went down in front of everyone this morning. Took a whole string of bunting with me.
+    tobin/laugh: I've been laughing about it all day, so nobody else gets to first.
++ ["Your lantern's cracked."]
+    tobin/sad: Yeah. One of mine. Don't tell Mara.
+- ->->
+
+=== mara_before ===
+mara/worried: There you are. Okay. Okay. Lanterns, then bread, then candles, then... okay.
++ ["Breathe. It's going to be lovely."]
+    mara/smile: Tell me that again at sundown.
++ ["Where do you want them?"]
+    mara: By the fountain. Thank you. Really.
+- ->->
+
 === kids_before ===
-pip/surprised: Are those ALL the lanterns?
-juno: There are twelve. I counted them yesterday. Twice.
-+ ["Want to see the red one?"]
-    You tilt the stack. Pip gasps like it's treasure.
+pip/surprised: Are you bringing ALL the lanterns?
+juno: There are twelve. Tobin counted. I counted again.
++ ["Want to see the red one later?"]
+    pip/laugh: YES.
 + ["Twelve exactly."]
     juno/smile: I know.
 - ->->
 
-=== nell_before ===
-nell/smile: Look at you. A walking lantern shop.
-nell: Sixty-one festivals I've watched from this step. Somebody always drops something.
-+ ["Not me. Not today."]
-    nell/laugh: That's what they all say.
-+ ["Sixty-one? Which was the best?"]
-    nell/warm: The year it poured and not one lantern would light. We all sat in the bakery till morning. Best one.
-- ->->
-
-=== ash_before ===
-ash/smile: Tea when you're done? I'm saving you the chipped cup. It's your favorite, don't argue.
-+ ["Save it. I'll be back before sundown."]
-    ash: I'll hold you to it.
-+ ["You could help me carry these."]
-    ash/laugh: And leave the tea alone? Wren would drink all of it.
-- ->->
-
 === trip ===
-You head across the square.
-Halfway, your foot catches a loose cobblestone. #event: trip
-The lanterns scatter across the stones. One rolls all the way to the fountain.
+Halfway to the fountain, your foot catches a loose cobblestone. #event: trip
+The lanterns scatter across the stones. One rolls all the way around the fountain.
 { variant == "promise":
     You hear paper tear. #event: tear
 }
@@ -176,23 +192,24 @@ What is this feeling?
     -> urge
 
 === urge ===
-Up the path at the edge of the square there's a hollow in the rocks where you used to hide as a kid. It's dry and quiet in there. Nobody can see in.
-The pull is loud now: get out of sight. #event: urge_peak
-+ [Hide] -> hide
+Up the hill, past the edge of the square, there's a hollow in the rocks where you used to hide as a kid. Nobody can see in.
+The pull is loud now: get out of sight. You can feel it dragging at your feet. #event: pull on
++ [Hide in the hollow, up the hill #go: hollow] -> hide
 + [Stay where you are] -> stay
 
 === stay ===
 ~ stayed = true
 You stay on the cobblestones. Your face is burning. The pull to run doesn't go anywhere. It just sits there, loud. #event: urge_hold
--> check
+You don't follow it. Your feet stay where they are. #event: pull off
+-> facts
 
 === hide ===
 ~ hide_count++
 You let the shell come. #event: hide
 { hide_count == 1:
-    Your back curves and hardens. Your arms fold in. In three heartbeats you're something round and armored, rolling up the hill path.
+    Your back curves and hardens. Your arms fold in. In three heartbeats you're something round and armored, tucked into the hollow.
 - else:
-    The shell closes over you, easy as breathing. Up the path, into the dark.
+    The shell closes over you, easy as breathing.
 }
 The hollow is exactly the right size. Cool stone, moss, the festival far away and muffled. #event: cave_rest
 Your breathing slows. The heat drains out of your face. Nobody is looking at you in here.
@@ -206,7 +223,6 @@ It works. It really does.
 = first_night
 The sun goes down. #event: nightfall
 In the square, people wait for the lanterns. They're still lying where they fell. #event: square_dark
-Someone puts candles in jars along the fountain. It isn't the same. The square stays mostly dark.
 Footsteps on the hill path. They stop outside the hollow.
 ash/worried: You in there?
 ash: I brought the chipped cup. I'll leave it here.
@@ -235,35 +251,86 @@ The shadow has crept further up your lane. #event: darkness_spreads
 Morning. You uncurl. #event: morning
 { hide_count == 1:
     There's a cup of cold tea on the rock outside.
+    Down the hill, every door on Lantern Lane has a paper invitation for tonight's supper at Mara's. Yours doesn't. #event: invitation missing
+    The shadow has spread down your lane. It's too dark to walk there without a light. #event: darkness_spreads
 }
-You go down the hill toward your lane. The lanterns sit in a heap on the fountain steps. Tonight is the festival's {hide_count == 1: second|next} night.
-{ hide_count == 1:
-    Every door on your lane has a paper invitation tucked in the frame: supper at Mara's tonight. Yours doesn't. #event: invitation missing
-    The shadow past your house looks longer than it did yesterday. #event: darkness_spreads
+{ hide_count > 1:
+    #event: darkness_spreads
 }
 The relief from last night is gone. Thinking about the square, your face heats up all over again. #event: return_distress
--> morning_hub
+-> facts
 
-=== morning_hub ===
+=== facts ===
+The village looks the way the feeling sees it. Everyone is staring. Everyone is pointing. Everyone saw. #event: lens shame
+But is that what actually happened? Talk to people. Look around the fountain. Find out.
+-> facts_hub
+
+=== facts_hub ===
 - (hub)
-+ {not nell_morning} [Talk to Nell #talk: nell]
-    -> nell_morning -> hub
-+ {not ash_morning} [Talk to Ash #talk: ash]
++ {not fact_tobin} [Ask Tobin #talk: tobin]
+    -> fact_tobin -> hub
++ {not fact_bakers} [Ask the bakers #talk: wren]
+    -> fact_bakers -> hub
++ {not fact_kids} [Ask the kids #talk: pip]
+    -> fact_kids -> hub
++ {not fact_stone} [Look at the cobblestones by the fountain #use: stone]
+    -> fact_stone -> hub
++ {not fact_lanterns} [Look at the lanterns #use: heap]
+    -> fact_lanterns -> hub
++ {hide_count > 0} {not ash_morning} [Talk to Ash #talk: ash]
     -> ash_morning -> hub
-+ {not bakers_morning} [Talk to the bakers #talk: wren]
-    -> bakers_morning -> hub
-+ {not kids_morning} [Talk to the kids #talk: pip]
-    -> kids_morning -> hub
-+ [Go back to the hollow] -> hide
-+ [Think back over what actually happened] -> check
++ {hide_count > 0} {not fact_mara_nell} [Talk to Nell #talk: nell]
+    -> fact_mara_nell -> hub
++ {hide_count == 0} {not fact_mara_ash} [Talk to Ash #talk: ash]
+    -> fact_mara_ash -> hub
++ {hide_count > 0} [Go back to the hollow #go: hollow] -> hide
++ {facts_seen >= 3} [Sit on the fountain wall and think it over #go: bench] -> decide
 
-=== nell_morning ===
-nell: Your lane went dim last night. Did you notice?
-+ ["I noticed."]
-    nell: Mm.
-+ ["That was me. I hid."]
-    nell/warm: I hid for a whole winter once. Came out in spring and they'd painted my door yellow.
-- nell/smile: Lanes go dark sometimes. They light back up. Usually somebody has to walk down them with a lantern first.
+=== fact_tobin ===
+~ facts_seen++
+tobin/sad: Hey. I'm sorry I laughed. I went down on that same stone this morning. Took out a whole string of bunting.
+tobin/worried: I laugh when I'm nervous. It wasn't about you. #event: fact tobin
+->->
+
+=== fact_bakers ===
+~ facts_seen++
+{ hide_count > 0:
+    oda: There you are. We missed you at the candles last night.
+- else:
+    wren/worried: Is it sundown? It feels like sundown.
+}
++ ["Did you see me fall?"]
+    wren/surprised: You fell? When?
++ ["Did you hear anyone laughing?"]
+    wren/surprised: Laughing? At what?
+-
+oda: We were up to our elbows in dough, love. We didn't see a thing. #event: fact bakers
+->->
+
+=== fact_kids ===
+~ facts_seen++
+pip/laugh: Did you SEE the red lantern? It rolled ALL the way around the fountain!
++ ["You weren't laughing at me?"]
+    juno/surprised: At you? We were watching the lantern.
++ ["I saw."]
+    juno: It went around twice. I counted.
+-
+pip/smile: Best thing that happened all day. #event: fact kids
+->->
+
+=== fact_stone ===
+~ facts_seen++
+You crouch by the fountain. One cobblestone sticks up at an angle, loose under your hand. #event: fact stone
+Anyone could catch a foot on it.
+->->
+
+=== fact_lanterns ===
+~ facts_seen++
+{ variant == "promise":
+    You count them. Eleven are fine. Her grandmother's lantern has a long tear down one side. #event: fact lanterns
+- else:
+    You count them. Ten are fine. Two are dented. Paper and wire bend back. #event: fact lanterns
+}
 ->->
 
 === ash_morning ===
@@ -273,45 +340,34 @@ nell: Your lane went dim last night. Did you notice?
     ash/worried: I left tea on the rock. Wasn't sure you were in there.
 }
 ash: Mara thinks you're angry with her. She's been asking everyone.
-+ ["I'm not angry. I was embarrassed."]
-    ash: She's in the square, sorting lanterns. In case that's useful.
-+ ["I don't want to talk about it."]
-    ash/warm: Okay. I'm around.
-- ->->
+ash: And your lane's gone dark. Here. Take this.
+Ash hands you a candle in a jar. It's warm in your hands. #event: get candle
+->->
 
-=== bakers_morning ===
-oda: There you are. We missed you at the candles last night.
-wren/smile: The bread was ready at sundown. Exactly at sundown.
-oda/smile: Told you.
-+ ["Did you see me fall?"]
-    wren/surprised: You fell? When?
-    oda: We were up to our elbows in dough, love. We didn't see a thing.
-+ ["Sorry I missed it."]
-    oda/warm: There's tonight.
-- ->->
+=== fact_mara_nell ===
+~ facts_seen++
+nell: There you are. Mara came down this lane last night with a candle, asking after you.
++ ["Was she angry?"]
+    nell/laugh: Angry? She was worried sick. She kept saying, "Are they okay? That looked like it hurt."
++ ["What did you tell her?"]
+    nell: That you'd turn up. People do. She kept asking if you were hurt.
+-
+nell/warm: Lanes go dark sometimes. They light back up. Usually somebody has to walk down them with a lantern first. #event: fact mara
+->->
 
-=== kids_morning ===
-pip/laugh: Did you SEE the red lantern yesterday? It rolled ALL the way to the fountain!
-juno: It went around the fountain twice. I counted.
-+ ["I saw."]
-    pip/smile: Best thing that happened all day.
-+ ["You weren't laughing at me?"]
-    juno/surprised: At you? We were watching the lantern.
-- ->->
+=== fact_mara_ash ===
+~ facts_seen++
+ash/worried: You okay? Mara was asking if you were hurt. She saw you go down.
++ ["Was she upset?"]
+    ash: Upset? She looked worried. About you, not the lanterns.
++ ["I'm fine."]
+    ash/warm: Okay.
+-
+ash: Tea's here when you want it. #event: fact mara
+->->
 
-=== check ===
-{ facts_done:
-    You already know what actually happened. #event: lens facts
-    -> decided
-}
-{ hide_count > 0:
-    You sit on the wall at the edge of the square and let yesterday play back.
-- else:
-    You make yourself look up.
-}
-At first the square looks the way the feeling sees it. #event: lens shame
-Everyone is staring. Everyone is pointing. Everyone saw.
-Look closer. Tap the people and things in the square to see what actually happened. #scene: facts
+=== decide ===
+You sit on the edge of the fountain. You found out {facts_seen} things about what actually happened. #scene: fit
 + [·] -> decided
 
 = decided
@@ -330,33 +386,21 @@ The opposite of hiding is to go back, keep your head up, and say something.
 ~ part_a = false
 ~ part_b = false
 ~ part_c = false
-{ hide_count > 0:
-    Mara and Tobin are in the square, sorting the lanterns for tonight.
-- else:
-    The lanterns are still lying by the fountain, a few steps away. Mara is already picking one up.
-}
-+ [Walk all the way back into the square]
-    ~ part_a = true
-    You walk into the middle of the square. #event: go_back
-    Every step, the heat climbs. It's worse, not better. #event: oa_step
-+ [Stay at the edge, where it's safer]
-    You stop at the edge, half behind a cart. #event: go_edge
--
-The hollow is still right there. You know exactly how fast the relief would come. #event: urge_pull
-+ [Keep going] -> posture
-+ [Hide after all]
+Mara is by the fountain with the lanterns. Walk back to her. The pull to hide will drag at you. Hold Shift (or the Head up button) to keep your head up. #event: pull on #scene: approach
++ [·] -> walked
+
+= walked
+{ turned_back:
     ~ bailed = true
     -> hide
-
-= posture
-Your head wants to drop. Your shoulders want to curl in.
-+ [Lift your head, pull your shoulders back, look at people]
-    ~ part_b = true
-    You lift your chin. It's like holding a door open in a strong wind. #event: posture up
-    Your heart is pounding. #event: oa_step
-+ [Keep your eyes on the ground]
-    You watch the cobblestones. #event: posture down
--
+}
+~ part_a = reached
+~ part_b = head_up
+{ reached:
+    You're standing in front of Mara. Every part of you is loud. #event: pull off
+- else:
+    You stop at the edge of the square, half behind a cart. #event: pull off
+}
 -> voice
 
 = voice
@@ -388,15 +432,21 @@ tobin/laugh: Mostly.
     Then Mara picks up her grandmother's lantern and turns it over.
     mara/sad: It was my grandmother's.
     You keep your head up. It doesn't close the tear.
-    At sundown the lanterns go up. Eleven glow. The twelfth hangs dark, torn down one side. #event: hang 11
 - else:
-    Together you check the lanterns. Ten are fine. Two are dented.
-    tobin/smile: Dents give them character.
-    Your heart is still going fast, but it's coming down, faster than you expected.
-    At sundown all twelve lanterns go up. #event: hang 12
+    tobin/smile: Two are dented. Dents give them character.
+}
+mara/smile: Help me get them up before sundown?
+Hang the lanterns along the string. #scene: hang
++ [·] -> lit
+
+= lit
+{ variant == "promise":
+    At sundown the lanterns are lit. Eleven glow. The twelfth hangs dark, torn down one side. #event: hang 11
+- else:
+    At sundown all twelve lanterns are lit. #event: hang 12
 }
 One catches, then the next, then the whole string. The square fills with light, and it spills down the lanes as far as your door. #event: ripple full
-There's an invitation tucked in your door frame. #event: invitation received
+Later you find an invitation tucked in your door frame. #event: invitation received
 -> festival
 
 = partial
@@ -405,11 +455,16 @@ There's an invitation tucked in your door frame. #event: invitation received
 - else:
     From the edge, you catch Mara's eye. She waves, a little unsure. #event: settle partial
 }
-You help a bit, mostly with your hands, not your eyes. The heat in your face hangs around all evening.
+mara: Could you help hang them?
+Hang the lanterns along the string. #scene: hang
++ [·] -> partial_lit
+
+= partial_lit
+You help, mostly with your hands, not your eyes. The heat in your face hangs around all evening.
 { variant == "promise":
-    Nobody mentions the torn lantern. It hangs at the end of the string, dark. #event: hang 11
+    The lanterns are lit. The torn one hangs at the end of the string, dark. #event: hang 11
 - else:
-    At sundown the lanterns go up. #event: hang 12
+    The lanterns are lit. #event: hang 12
 }
 The square lights up, mostly. The shadow on your lane pulls back a little. #event: ripple partial
 Mara hands you an invitation herself. She doesn't stay to talk. #event: invitation pending
@@ -421,12 +476,13 @@ Mara hands you an invitation herself. She doesn't stay to talk. #event: invitati
 - else:
     From behind the cart, you watch Mara and Tobin sort the lanterns without you. #event: settle minimal
 }
+Mara and Tobin hang the lanterns without you.
 { variant == "promise":
-    #event: hang 11
+    At sundown they're lit. Eleven glow. #event: hang 11
 - else:
-    #event: hang 12
+    At sundown they're lit. #event: hang 12
 }
-At sundown the lanterns go up. You watch the square light up from where you stand. #event: ripple minimal
+You watch the square light up from where you stand. #event: ripple minimal
 The light stops at the end of your lane. The heat in your face fades slowly, and stays longer than you'd like.
 -> festival
 
@@ -440,7 +496,15 @@ When a feeling like this fits, it's pointing at something to fix. So fix it: say
 ~ part_a = false
 ~ part_b = false
 ~ part_c = false
-You go find Mara. { hide_count > 0: She's in the square, sorting lanterns for tonight. | She's by the fountain, gathering lanterns. } #event: go_back
+Mara is by the fountain with the lanterns. Go to her. The pull to hide will drag at you. Hold Shift (or the Head up button) to keep your head up. #event: pull on #scene: approach
++ [·] -> walked
+
+= walked
+{ turned_back:
+    ~ bailed = true
+    -> hide
+}
+You're with Mara. #event: pull off
 + { variant == "promise" } ["I stacked your grandmother's lantern with the others to save a trip. It tore when I fell. I'm sorry."]
     ~ part_a = true
     Saying it out loud makes your face burn hotter. #event: oa_step
@@ -454,23 +518,22 @@ You go find Mara. { hide_count > 0: She's in the square, sorting lanterns for to
 + [Don't bring it up]
     You start gathering lanterns and don't mention it. Neither does she.
 -
-The hollow is still up the hill. Relief is right there. #event: urge_pull
-+ [Stay] -> make_right
-+ [Hide after all]
-    ~ bailed = true
-    -> hide
+-> make_right
 
 = make_right
 + { variant == "promise" } ["Can we fix it together? Now, before sundown?"]
     ~ part_b = true
-    Your voice wobbles. #event: oa_step
     mara/sad: ...Okay. Yes.
-    You find glue and a sheet of gold paper, and you work on it side by side. #event: mend
+    She finds glue and a sheet of gold paper. Patch the tear. #scene: mend
+    ++ [·]
+    You work on it side by side until the last seam is down. #event: mend
 + { variant == "promise" } ["I'll buy you a new one."]
     mara/sad: That's kind. It wouldn't be hers, though.
-+ { variant == "main" } [Help bend the two dented lanterns back into shape]
++ { variant == "main" } [Help fix the two dented lanterns]
     ~ part_b = true
-    You bend the wire back while Mara holds them steady. #event: oa_step
+    Mara holds them steady. Bend the wire back into shape. #scene: mend
+    ++ [·]
+    Good as new. Nearly. #event: oa_step
 + [Leave it]
     { variant == "promise":
         The torn lantern stays on the fountain step.
@@ -482,9 +545,9 @@ The hollow is still up the hill. Relief is right there. #event: urge_pull
 
 = let_go
 Afterward, you want to keep apologizing, just in case.
-+ [Let it be done. Pick up a lantern and help hang them.]
++ [Let it be done. Help hang the lanterns.]
     ~ part_c = true
-    You let the apology stand. You climb the ladder.
+    You let the apology stand.
 + [Keep apologizing all evening]
     You say sorry again, and again later. Mara keeps saying it's fine. She starts to look tired.
 -
@@ -492,58 +555,66 @@ Afterward, you want to keep apologizing, just in case.
 -> repair_result
 
 === repair_result ===
+{ completeness == "minimal":
+    #event: settle minimal
+    Mara and Tobin hang the lanterns.
+    { variant == "promise":
+        At sundown they're lit. One hangs dark. #event: hang 11
+    - else:
+        At sundown they're lit. #event: hang 12
+    }
+    You and Mara don't quite look at each other. #event: ripple minimal
+    The light stops at the end of your lane.
+    -> festival
+}
+Hang the lanterns along the string. #scene: hang
++ [·] -> lit
+
+= lit
 { completeness:
 - "full":
     { variant == "promise":
-        At sundown the lanterns go up. Her grandmother's lantern glows with a gold seam down one side. #event: hang 12
+        At sundown the lanterns are lit. Her grandmother's lantern glows with a gold seam down one side. #event: hang 12
         mara/warm: I think I like it better.
     - else:
-        At sundown all twelve go up, dents and all. #event: hang 12
+        At sundown all twelve are lit, dents and all. #event: hang 12
     }
     Your heart was racing an hour ago. Now it's slow. #event: settle full
     The square fills with light, and it spills down the lanes as far as your door. #event: ripple full
-    There's an invitation tucked in your door frame. #event: invitation received
-- "partial":
+    Later you find an invitation tucked in your door frame. #event: invitation received
+- else:
     #event: settle partial
     { variant == "promise" && not part_b:
-        At sundown the lanterns go up. One hangs dark, torn down its side. #event: hang 11
+        At sundown the lanterns are lit. One hangs dark, torn down its side. #event: hang 11
     - else:
-        At sundown the lanterns go up. #event: hang 12
+        At sundown the lanterns are lit. #event: hang 12
     }
     The square is lit. Things with Mara feel a little unfinished. #event: ripple partial
     She hands you an invitation herself. #event: invitation pending
-- else:
-    #event: settle minimal
-    { variant == "promise":
-        #event: hang 11
-    - else:
-        #event: hang 12
-    }
-    The lanterns go up. You and Mara don't quite look at each other. #event: ripple minimal
-    The light stops at the end of your lane.
 }
 -> festival
 
 === festival ===
 { completeness:
-- "full": The square is full of people and light. Everyone you know is here somewhere.
-- "partial": The square is lit and busy. You drift around the edges of it.
+- "full": The festival is here. The square is full of people and light.
+- "partial": The festival is here. The square is lit and busy.
 - else: The festival goes on. You can still walk over to anyone you like.
 }
+Talk to anyone you like. When you're ready, walk home to Lantern Lane.
 - (hub)
 + {not mara_evening} [Talk to Mara #talk: mara]
     -> mara_evening -> hub
 + {not tobin_evening} [Talk to Tobin #talk: tobin]
     -> tobin_evening -> hub
-+ {not bakers_evening} [Talk to the bakers #talk: wren]
-    -> bakers_evening -> hub
 + {not kids_evening} [Talk to the kids #talk: pip]
     -> kids_evening -> hub
-+ {not nell_evening} [Talk to Nell #talk: nell]
-    -> nell_evening -> hub
++ {not bakers_evening} [Talk to the bakers #talk: wren]
+    -> bakers_evening -> hub
 + {not ash_evening} [Talk to Ash #talk: ash]
     -> ash_evening -> hub
-+ [Head home for the night] -> chain_review
++ {not nell_evening} [Talk to Nell #talk: nell]
+    -> nell_evening -> hub
++ [Walk home #go: home] -> chain_review
 
 === mara_evening ===
 { completeness:
@@ -613,14 +684,14 @@ pip/smile: That's why it's the best.
 
 === ash_evening ===
 { hide_count > 0:
-    ash/warm: The chipped cup's still on the rock up there, by the way. I'll let you fetch it.
+    ash/warm: The chipped cup's still on the rock up the hill, by the way. I'll let you fetch it.
 - else:
     ash/smile: You never came back for your tea.
 }
 ash: Fresh pot. Sit.
 + [Sit]
     The tea is terrible. You drink all of it.
-+ ["Tomorrow. I promise. On its own trip."]
++ ["Tomorrow. I promise."]
     ash/laugh: I'll hold you to it.
 - ->->
 
@@ -629,5 +700,5 @@ At home, you think back over the day, one moment at a time. #scene: chain
 + [·] -> ending
 
 === ending ===
-That's the end of this prototype. Thank you for playing. #event: end
+The lanterns burn on into the night. #event: end
 -> END

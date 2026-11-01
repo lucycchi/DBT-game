@@ -16,3 +16,10 @@ export function scoreParts(parts: readonly boolean[]): Completeness {
 export function outcome(a: boolean, b: boolean, c: boolean): Completeness {
   return scoreParts([a, b, c]);
 }
+
+/** Walking back counts as "head up" when it was held for most of the walk. */
+export const HEAD_UP_SHARE = 0.6;
+
+export function heldHeadUp(headUpSeconds: number, walkSeconds: number): boolean {
+  return walkSeconds > 0 && headUpSeconds / walkSeconds >= HEAD_UP_SHARE;
+}

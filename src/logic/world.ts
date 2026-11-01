@@ -4,6 +4,7 @@
 import type { GameEvent } from "./tags";
 import type { Completeness } from "./outcome";
 import { isCharacterId, isExpression, type CharacterId, type Expression } from "./cast";
+import { isHotspotId, type HotspotId } from "./facts";
 
 export const LANTERN_COUNT = 12;
 export const MAX_DARKNESS = 3;
@@ -16,7 +17,7 @@ export interface WorldState {
   form: "person" | "shell";
   posture: "upright" | "neutral" | "slumped";
   faceHot: boolean;
-  lanterns: "carried" | "scattered" | "heaped" | "hung";
+  lanterns: "workshop" | "carried" | "scattered" | "heaped" | "hung";
   lanternsHung: number;
   /** How lit the square is, 0..1. */
   squareLight: number;
@@ -28,6 +29,12 @@ export interface WorldState {
   heirloom: "whole" | "torn" | "mended";
   /** Which lens the square is drawn through during check the facts. */
   lens: "none" | "shame" | "facts";
+  /** Details found while looking again at what happened. */
+  factsFound: HotspotId[];
+  /** The pull to hide drags the player toward the hollow. */
+  pull: boolean;
+  /** Carrying Ash's candle jar: dark lanes can be walked. */
+  hasLight: boolean;
   ended: boolean;
 }
 
@@ -38,7 +45,7 @@ export function initialWorld(): WorldState {
     form: "person",
     posture: "neutral",
     faceHot: false,
-    lanterns: "carried",
+    lanterns: "workshop",
     lanternsHung: 0,
     squareLight: 1,
     darkness: 0,
@@ -46,6 +53,9 @@ export function initialWorld(): WorldState {
     invitation: "none",
     heirloom: "whole",
     lens: "none",
+    factsFound: [],
+    pull: false,
+    hasLight: false,
     ended: false,
   };
 }
@@ -61,6 +71,10 @@ const INVITES: readonly WorldState["invitation"][] = ["none", "missing", "pendin
 
 export const WORLD_EVENTS = new Set([
   "afternoon",
+  "carry",
+  "pull",
+  "get",
+  "fact",
   "trip",
   "tear",
   "cue_heat",
@@ -87,8 +101,18 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
   switch (ev.name) {
     case "afternoon":
       return { ...w, time: "afternoon" };
+    case "carry":
+      return { ...w, lanterns: "carried" };
+    case "pull":
+      return { ...w, pull: ev.arg === "on" };
+    case "get":
+      if (ev.arg !== "candle") throw new Error(`Unknown item: ${ev.arg}`);
+      return { ...w, hasLight: true };
+    case "fact":
+      if (!isHotspotId(ev.arg ?? "")) throw new Error(`Unknown fact: ${ev.arg}`);
+      return w.factsFound.includes(ev.arg as HotspotId) ? w : { ...w, factsFound: [...w.factsFound, ev.arg as HotspotId] };
     case "trip":
-      return { ...w, lanterns: "scattered", faceHot: true, posture: "slumped" };
+      return { ...w, lanterns: "scattered", faceHot: true, posture: "slumped", pull: false };
     case "tear":
       return { ...w, heirloom: "torn" };
     case "cue_heat":
@@ -96,13 +120,13 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
     case "cue_slump":
       return { ...w, posture: "slumped" };
     case "hide":
-      return { ...w, form: "shell", location: "cave", faceHot: false };
+      return { ...w, form: "shell", location: "cave", faceHot: false, pull: false };
     case "nightfall":
       return { ...w, time: "night" };
     case "square_dark":
       return { ...w, lanterns: "heaped", squareLight: 0.1 };
     case "morning":
-      return { ...w, time: "morning", form: "person", location: "lane", squareLight: 1 };
+      return { ...w, time: "morning", form: "person", squareLight: 1 };
     case "darkness_spreads":
       return { ...w, darkness: Math.min(MAX_DARKNESS, w.darkness + 1) };
     case "return_distress":
@@ -128,7 +152,7 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
     case "ripple": {
       const apply = RIPPLE[ev.arg as Completeness];
       if (!apply) throw new Error(`ripple needs full|partial|minimal, got ${ev.arg}`);
-      return { ...w, time: "night", lens: "none", ...apply(w) };
+      return { ...w, time: "night", lens: "none", pull: false, ...apply(w) };
     }
     case "invitation":
       if (!INVITES.includes(ev.arg as WorldState["invitation"])) {

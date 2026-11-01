@@ -76,6 +76,25 @@ Loop:
   facilitators ask the coworker scenario out loud after play instead; it is still the
   success measure.
 
+## Decisions after reading the assignment brief (2026-11-01)
+The Game Week brief requires one of three genres; the click-through story fit none. Now an
+**exploration/adventure** game:
+- **A walkable world:** four connected, revisitable areas (Lantern Lane, Market Street with
+  an enterable workshop, the Square, the Hill), side-scrolling, built with **Phaser 3**.
+  This replaces the earlier "no engine until playtested" rule; the story and logic were
+  kept separate from presentation so only the presentation layer changed.
+- **The skills are the obstacles:**
+  1. Finding out what happened: explore and talk to people to collect facts under a red
+     "as the feeling sees it" haze.
+  2. Walking back: a movement challenge against the pull to hide, where holding your head
+     up is the mechanic, and distress rises before it falls.
+  3. Making it right: a hands-on mending puzzle.
+  4. Hanging the lanterns: the final challenge.
+- **Progression:** hiding spreads darkness that blocks your lane; Ash's candle opens it.
+  Facts found free villagers from the haze; lanterns hung light the lanes.
+- **Every asset generated in code:** SVG art, synthesized music and sound.
+- **Public link:** GitHub Pages, repo made public. The brief PDF is kept out of the repo.
+
 ## Open decisions
 - Audience: clinical adjunct (with therapist) vs. general wellness product.
   Affects evidence needs, content review, crisis handling, business model.

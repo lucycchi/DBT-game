@@ -8,8 +8,10 @@ export interface GameEvent {
   arg?: string;
 }
 
-export type SceneName = "facts" | "chain";
-const SCENES: readonly SceneName[] = ["facts", "chain"];
+// fit: answer whether the feeling matches what happened. approach: walk back
+// against the pull to hide. mend/hang: hands-on puzzles. chain: look back.
+export type SceneName = "fit" | "approach" | "mend" | "hang" | "chain";
+const SCENES: readonly SceneName[] = ["fit", "approach", "mend", "hang", "chain"];
 
 export interface ParsedTags {
   events: GameEvent[];

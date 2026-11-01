@@ -6,14 +6,15 @@
   "type": "module",
   "scripts": {
     "ink": "inkjs-compiler -o public/festival.json story/festival.ink",
-    "bundle": "esbuild src/main.ts --bundle --format=esm --sourcemap --outfile=public/main.js",
+    "bundle": "esbuild src/main.ts --bundle --format=esm --minify --sourcemap --outfile=public/main.js",
     "build": "npm run ink && npm run bundle",
     "dev": "npm run ink && esbuild src/main.ts --bundle --format=esm --sourcemap --outfile=public/main.js --servedir=public --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "inkjs": "^2.4.0"
+    "inkjs": "^2.4.0",
+    "phaser": "^3.90.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
