@@ -56,8 +56,9 @@ repair is the matching skill.
 ## Playtesting
 
 At the end, **Download playtest notes** saves a JSON log of every choice, event, inspected
-detail, fit answer, chain tap, and the transfer answers, with timestamps. The latest session
-is also kept in the browser's localStorage. Nothing is sent anywhere.
+detail, fit answer, chain tap, and the transfer answers, with timestamps. The log lives only
+in memory, so download it before reloading or starting the next participant. Nothing is
+stored in the browser or sent anywhere.
 
 Things the log answers directly (see "What the prototype must show" in DESIGN.md):
 - Did they hide, how many times, and did they bail out partway back (`hide_count`, `bailed`

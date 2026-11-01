@@ -1,5 +1,7 @@
 // Playtest notes: what the player chose and when, kept for the facilitator.
-// Stays in this browser only; the facilitator downloads it at the end.
+// Kept in memory only: it holds participants' free-text answers about their
+// feelings, and playtest machines are shared. The facilitator downloads it at
+// the end; reloading the page discards it.
 
 export interface LogEntry {
   /** Seconds since the session started. */
@@ -8,7 +10,12 @@ export interface LogEntry {
   data?: unknown;
 }
 
-const STORAGE_KEY = "lantern-night:last-playtest";
+// Clear what earlier builds persisted.
+try {
+  localStorage.removeItem("lantern-night:last-playtest");
+} catch {
+  // Storage unavailable; nothing to clear.
+}
 
 export class PlaytestLog {
   private start = Date.now();
@@ -18,11 +25,6 @@ export class PlaytestLog {
 
   record(type: string, data?: unknown): void {
     this.entries.push({ t: Math.round((Date.now() - this.start) / 100) / 10, type, data });
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.toJSON()));
-    } catch {
-      // Storage can be unavailable (private window); the in-memory log still works.
-    }
   }
 
   toJSON() {
