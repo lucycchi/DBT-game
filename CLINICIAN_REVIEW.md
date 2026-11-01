@@ -37,9 +37,21 @@ before playtesting with real players. Each points to where it lives.
 7. **Chain review wording.** Includes a vulnerability link ("rushing, all twelve in one
    trip") before the prompting event. Reflections are in `src/logic/chain.ts`.
 
-8. **Transfer answer key.** The "one way to look at it" text after the coworker scenario.
-   (`src/ui/scenes.ts`, `runTransferScene`)
+8. **Plain-language descriptions of skills.** The game no longer names DBT skills. These
+   lines carry the teaching and need checking for accuracy:
+   - Why to do the opposite: "When a feeling doesn't match what happened, doing what it says
+     keeps it going. Every time you hide, your body learns there was something to hide from.
+     Doing the opposite is how the feeling settles. Halfway doesn't do much: the feeling is
+     watching how you walk, where you look, and how you sound." (knot `not_fits`)
+   - Why to repair: "When a feeling like this fits, it's pointing at something to fix. Say
+     plainly what happened, make it right as best you can, and then put it down." (knot `fits`)
+   - Emotion descriptions on the naming screen (stitch `trip.body`) and the look-back
+     reflections (`src/logic/chain.ts`).
 
-9. **Safety.** The footer says the prototype is not therapy or a crisis resource and points
+9. **Villager dialogue.** All conversations follow the rules in CHARACTERS.md (no lectures,
+   no shaming). Nell's "lanes go dark sometimes; usually somebody has to walk down them with a
+   lantern first" and Ash's "That's allowed" (about hiding) carry the most meaning.
+
+10. **Safety.** The footer says the prototype is not therapy or a crisis resource and points
    to emergency services and 988 (US). No crisis detection or in-game handling exists.
    DESIGN.md lists crisis handling as an open decision.

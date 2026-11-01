@@ -8,8 +8,8 @@ export interface GameEvent {
   arg?: string;
 }
 
-export type SceneName = "facts" | "chain" | "transfer";
-const SCENES: readonly SceneName[] = ["facts", "chain", "transfer"];
+export type SceneName = "facts" | "chain";
+const SCENES: readonly SceneName[] = ["facts", "chain"];
 
 export interface ParsedTags {
   events: GameEvent[];

@@ -19,6 +19,9 @@ scenario) as described in DESIGN.md.
   feedback text. Costs show up through the world, not through judgment.
 - DBT skill content must stay faithful to standard DBT; flag anything that
   needs clinician review instead of improvising.
+- Player-facing text uses plain language: describe what a skill does, never its
+  DBT name. A test enforces this.
+- Dialogue is written in Ink by hand (see CHARACTERS.md), not generated at runtime.
 
 ## Working style
 - Be direct and point out flaws in ideas; no flattery.

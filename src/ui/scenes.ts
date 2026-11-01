@@ -1,5 +1,6 @@
-// Interactive scenes the Ink story hands off to: check the facts, chain review,
-// and the text-only transfer question. Each resolves with what the player did.
+// Interactive scenes the Ink story hands off to: looking again at what happened
+// (DBT: check the facts) and looking back over the day (DBT: chain analysis).
+// Each resolves with what the player did. Player-facing text avoids DBT terms.
 
 import {
   canDecide,
@@ -62,7 +63,7 @@ export function runFactsScene(
     const updateDecide = () => {
       const left = MIN_INSPECTED - facts.inspected.length;
       decide.disabled = !canDecide(facts);
-      decide.textContent = left > 0 ? `Look at ${left} more to decide` : "Does the feeling fit the facts?";
+      decide.textContent = left > 0 ? `Look at ${left} more to decide` : "Does the feeling match what happened?";
     };
 
     const show = (id: HotspotId) => {
@@ -116,8 +117,8 @@ export function runFactsScene(
         result.replaceChildren(
           h("p", {
             text: fit
-              ? "From your answers, the feeling fits the facts."
-              : "From your answers, the feeling doesn't fit the facts.",
+              ? "From your answers, the feeling matches what happened."
+              : "From your answers, the feeling doesn't match what happened.",
           }),
           button("Continue", "primary", () => {
             panel.replaceChildren();
@@ -134,7 +135,7 @@ export function runFactsScene(
         h(
           "div",
           { class: "scene fit" },
-          h("p", { class: "hint", text: "Shame fits when people would push you away for this. Guilt fits when you went against your own values." }),
+          h("p", { class: "hint", text: "Shame makes sense when people you care about would really push you away over this. Guilt makes sense when you went against something you care about." }),
           ...rows,
           result,
         ),
@@ -173,89 +174,11 @@ export function runChainScene(panel: HTMLElement, record: ChainRecord, onTap: (i
       h(
         "div",
         { class: "scene chain-review" },
-        h("p", { class: "hint", text: "Tap the link where a different choice would change what happens. Tap as many as you like." }),
+        h("p", { class: "hint", text: "Tap a moment where doing something different would change how the day went. Tap as many as you like." }),
         chain,
         reflection,
         done,
       ),
     );
-  });
-}
-
-// --- Transfer --------------------------------------------------------------
-
-export interface TransferAnswers {
-  feeling: string;
-  applies: "yes" | "no" | "depends" | "";
-  why: string;
-}
-
-export function runTransferScene(panel: HTMLElement): Promise<TransferAnswers> {
-  return new Promise((resolve) => {
-    const feeling = h("input");
-    feeling.type = "text";
-    feeling.id = "transfer-feeling";
-    const why = h("textarea");
-    why.id = "transfer-why";
-    why.rows = 3;
-    const applies = h("div", { class: "yn" });
-    let pickedApplies: TransferAnswers["applies"] = "";
-    for (const [label, value] of [["Yes", "yes"], ["No", "no"], ["It depends", "depends"]] as const) {
-      const b = button(label, "choice small", () => {
-        pickedApplies = value;
-        applies.querySelectorAll("button").forEach((x) => x.classList.toggle("picked", x === b));
-      });
-      applies.appendChild(b);
-    }
-
-    const label = (text: string, forId?: string) => {
-      const l = h("label", { text });
-      if (forId) l.htmlFor = forId;
-      return l;
-    };
-
-    const submit = button("Done", "primary", () => {
-      const answers = { feeling: feeling.value.trim(), applies: pickedApplies, why: why.value.trim() };
-      panel.replaceChildren(
-        h(
-          "div",
-          { class: "scene transfer" },
-          h("h3", { text: "One way to look at it" }),
-          h("p", {
-            text:
-              "It depends on the facts, so check them first. Did your coworker brush you off, or just move on " +
-              "because time was short? If shame doesn't fit (you didn't act against your values, and no one is " +
-              "about to push you out), opposite action applies: go to the lunch, camera on, head up, and say " +
-              "something, maybe bring the idea back up. If the facts show something real, like you'd talked " +
-              "over someone, repair fits better: own it, make amends, let it go.",
-          }),
-          button("Finish", "primary", () => {
-            panel.replaceChildren();
-            resolve(answers);
-          }),
-        ),
-      );
-    });
-
-    panel.replaceChildren(
-      h(
-        "div",
-        { class: "scene transfer" },
-        h("p", {
-          class: "scenario",
-          text:
-            "You're in a work meeting. You share an idea. Your coworker doesn't respond and moves straight " +
-            "to the next item. Your face goes hot. You want to turn your camera off and skip the team lunch afterward.",
-        }),
-        label("What might you be feeling?", "transfer-feeling"),
-        feeling,
-        label("Would opposite action fit here?"),
-        applies,
-        label("Why?", "transfer-why"),
-        why,
-        submit,
-      ),
-    );
-    feeling.focus();
   });
 }

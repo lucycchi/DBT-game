@@ -6,9 +6,12 @@ import { Story } from "inkjs";
 import { outcome } from "./logic/outcome";
 import { parseTags, type GameEvent, type SceneName } from "./logic/tags";
 import type { Variant } from "./logic/facts";
+import { isCharacterId, parseSpoken, type CharacterId, type SpokenLine } from "./logic/cast";
 
 export interface StoryLine {
   text: string;
+  /** Set when the line is dialogue; `text` is then the spoken words only. */
+  spoken: SpokenLine | null;
   events: GameEvent[];
   scene: SceneName | null;
 }
@@ -16,6 +19,8 @@ export interface StoryLine {
 export interface StoryChoice {
   index: number;
   text: string;
+  /** From a `#talk: id` choice tag: choosing this starts a conversation with that character. */
+  talkTo: CharacterId | null;
 }
 
 type InkValue = string | number | boolean;
@@ -37,16 +42,21 @@ export class Engine {
   continueBatch(): StoryLine[] {
     const lines: StoryLine[] = [];
     while (this.story.canContinue) {
-      const text = (this.story.Continue() ?? "").trim();
+      const raw = (this.story.Continue() ?? "").trim();
       const { events, scene } = parseTags(this.story.currentTags);
-      lines.push({ text, events, scene });
+      const spoken = parseSpoken(raw);
+      if (spoken?.expression) events.push({ name: "face", arg: `${spoken.speaker}:${spoken.expression}` });
+      lines.push({ text: spoken ? spoken.text : raw, spoken, events, scene });
       if (scene) break;
     }
     return lines;
   }
 
   get choices(): StoryChoice[] {
-    return this.story.currentChoices.map((c) => ({ index: c.index, text: c.text }));
+    return this.story.currentChoices.map((c) => {
+      const tag = (c.tags ?? []).map((t) => /^\s*talk\s*:\s*(\w+)\s*$/.exec(t)?.[1]).find(Boolean);
+      return { index: c.index, text: c.text, talkTo: tag && isCharacterId(tag) ? tag : null };
+    });
   }
 
   choose(index: number): void {

@@ -9,7 +9,8 @@ import type { Completeness } from "./logic/outcome";
 import { createWorldView } from "./ui/world";
 import { createMeterView } from "./ui/meter";
 import { createStoryView } from "./ui/story";
-import { runChainScene, runFactsScene, runTransferScene } from "./ui/scenes";
+import { runChainScene, runFactsScene } from "./ui/scenes";
+import { talkGroup } from "./logic/cast";
 import { PlaytestLog } from "./playtest";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -54,7 +55,12 @@ async function play(variant: Variant) {
         log.record("event", ev);
       }
       render(state);
-      if (line.text) await story.addLine(line.text);
+      if (line.spoken) {
+        const expression = line.spoken.expression ?? state.world.faces[line.spoken.speaker] ?? "neutral";
+        await story.addLine(line.text, { ...line.spoken, expression });
+      } else if (line.text) {
+        await story.addLine(line.text);
+      }
     }
 
     const scene = batch[batch.length - 1]?.scene;
@@ -77,9 +83,6 @@ async function play(variant: Variant) {
       };
       log.record("chain_record", record);
       await runChainScene(story.panel, record, (id) => log.record("chain_tap", id));
-    } else if (scene === "transfer") {
-      story.clear();
-      log.record("transfer", await runTransferScene(story.panel));
     }
     if (scene) {
       engine.choose(0);
@@ -87,10 +90,23 @@ async function play(variant: Variant) {
     }
 
     if (engine.ended) break;
-    const choice = await story.showChoices(engine.choices);
+    const choices = engine.choices;
+    // Clicking a villager picks the matching "Talk to ..." choice.
+    world.setTalkable(
+      choices.flatMap((c) => (c.talkTo ? [c.talkTo] : [])).flatMap((id) => [id, ...talkGroup(id)]),
+      (id) => {
+        const target = choices.find((c) => c.talkTo && (c.talkTo === id || talkGroup(c.talkTo).includes(id)));
+        if (target) story.pick(target.index);
+      },
+    );
+    const choice = await story.showChoices(choices);
+    world.setTalkable([], null);
     log.record("choice", choice.text);
     engine.choose(choice.index);
-    story.clear();
+    // Spoken choices continue the conversation on screen; anything else starts a fresh page.
+    const said = /^"(.*)"$/.exec(choice.text);
+    if (said) await story.addLine(said[1], { speaker: "you", expression: null, text: said[1] });
+    else story.clear();
   }
 
   log.record("end");

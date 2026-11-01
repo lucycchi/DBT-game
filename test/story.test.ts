@@ -60,14 +60,33 @@ function play(variant: Variant, picks: (string | number)[], answers: SceneAnswer
   throw new Error("Story did not end");
 }
 
+// Player-facing text describes skills instead of naming them.
+const DBT_TERMS = /opposite action|check(ing)? the facts|chain analysis|\bDBT\b|distress tolerance|emotion regulation|prompting event|vulnerabilit/i;
+
 const text = (r: Run) => r.lines.map((l) => l.text).join("\n");
 
 describe("story: stay, shame does not fit, opposite action all the way", () => {
-  const run = play("main", ["cross", "shame", "stay", "all the way", "keep going", "lift", "steady"], { fit: false });
+  const run = play("main", ["talk to tobin", "what happened", "carry", "shame", "stay", "all the way", "keep going", "lift", "spectacular", "talk to mara", "okay", "head home"], { fit: false });
 
   it("reaches every scene and ends", () => {
-    expect(run.scenes).toEqual(["facts", "chain", "transfer"]);
+    expect(run.scenes).toEqual(["facts", "chain"]);
     expect(run.state.world.ended).toBe(true);
+  });
+
+  it("parses dialogue and gives speakers their expressions", () => {
+    const tobin = run.lines.find((l) => l.spoken?.speaker === "tobin" && l.spoken.expression === "sad");
+    expect(tobin?.text).toMatch(/Loose cobblestone/);
+    expect(run.state.world.faces.mara).toBe("smile");
+  });
+
+  it("talk choices are tagged with who they're for", () => {
+    const engine = new Engine(json, "main");
+    engine.continueBatch();
+    expect(engine.choices.filter((c) => c.talkTo).map((c) => c.talkTo)).toEqual(["mara", "tobin", "wren", "pip", "nell", "ash"]);
+  });
+
+  it("talking is optional and once per character per scene", () => {
+    expect(run.choicesTaken.filter((c) => c === "Talk to Tobin")).toHaveLength(1);
   });
 
   it("raises distress during opposite action before it falls", () => {
@@ -88,7 +107,7 @@ describe("story: stay, shame does not fit, opposite action all the way", () => {
 describe("story: hiding", () => {
   const run = play(
     "main",
-    ["cross", "anger", "look again", "shame", "hide", "rest", "sleep", "go back to the hollow", "rest", "sleep", "look at", "all the way", "keep going", "eyes on the ground", "nothing"],
+    ["carry", "anger", "look again", "shame", "hide", "rest", "stay quiet", "sleep", "talk to the kids", "laughing at me", "go back to the hollow", "rest", "sleep", "think back", "all the way", "keep going", "eyes on the ground", "nothing", "head home"],
     { fit: false },
   );
 
@@ -102,6 +121,7 @@ describe("story: hiding", () => {
     const t = text(run);
     expect(t).toMatch(/Yours doesn't/);
     expect(t).toMatch(/must be angry with me/);
+    expect(t).toMatch(/We were watching the lantern/);
     expect(t).not.toMatch(/\b(bad|wrong|good job|should have|failed)\b/i);
   });
 
@@ -113,7 +133,7 @@ describe("story: hiding", () => {
 });
 
 describe("story: promise variant, emotion fits, repair", () => {
-  const run = play("promise", ["cross", "guilt", "stay", "plainly", "stay", "mend", "let it go"], { fit: true });
+  const run = play("promise", ["carry", "guilt", "stay", "i stacked", "stay", "fix it together", "let it be done", "talk to mara", "nod", "head home"], { fit: true });
 
   it("mends the heirloom and recovers fully", () => {
     expect(run.engine.getVar("path")).toBe("repair");
@@ -125,12 +145,12 @@ describe("story: promise variant, emotion fits, repair", () => {
 describe("story: bailing out partway can still recover", () => {
   const run = play(
     "main",
-    ["cross", "not sure", "stay", "edge", "hide after all", "rest", "sleep", "look at", "all the way", "keep going", "lift", "steady"],
+    ["carry", "not sure", "stay", "edge", "hide after all", "rest", "i'm here", "sleep", "think back", "all the way", "keep going", "lift", "spectacular", "head home"],
     { fit: false },
   );
 
   it("skips the facts scene the second time and ends fully recovered", () => {
-    expect(run.scenes).toEqual(["facts", "chain", "transfer"]);
+    expect(run.scenes).toEqual(["facts", "chain"]);
     expect(run.engine.getVar("bailed")).toBe(true);
     expect(run.state.world.squareLight).toBe(1);
   });
@@ -150,6 +170,12 @@ describe("story: random walks", () => {
       while (!engine.ended) {
         if (++steps > 400) throw new Error("walk did not end");
         const batch = engine.continueBatch();
+        for (const line of batch) {
+          // Anything shaped like dialogue must be a known speaker.
+          if (/^[a-z]+(\/[a-z]+)?: /.test(line.text)) throw new Error(`Unparsed dialogue: ${line.text}`);
+          expect(line.text).not.toMatch(DBT_TERMS);
+        }
+        for (const c of engine.choices) expect(c.text).not.toMatch(DBT_TERMS);
         for (const line of batch) for (const ev of line.events) state = applyEvent(state, ev);
         const last = batch[batch.length - 1];
         if (last?.scene) {

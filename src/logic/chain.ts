@@ -1,6 +1,7 @@
-// Chain review: a short timeline of what happened, link by link. The player taps
-// the link where a different choice would change things. Every link gets an
-// answer; none is marked right or wrong.
+// Looking back (DBT: chain analysis): a short timeline of the day, moment by
+// moment. The player taps the moment where a different choice would change
+// things. Every moment gets an answer; none is marked right or wrong.
+// Player-facing text describes what each step is for, without DBT terms.
 
 import type { Completeness } from "./outcome";
 import type { Variant } from "./facts";
@@ -43,38 +44,38 @@ export function buildChain(r: ChainRecord): ChainLink[] {
   return [
     {
       id: "vulnerability",
-      title: "Before",
+      title: "Before it happened",
       detail: promise
         ? "Rushing before sunset, arms full, the heirloom stacked on top."
         : "Rushing before sunset, all twelve lanterns in one trip.",
       reflection:
-        "Vulnerabilities make the next links more likely. Two trips instead of one" +
-        (promise ? ", or keeping the promise to carry the heirloom alone," : "") +
-        " might have meant no fall. Not every link is in your control, but this one partly was.",
+        "Rushing and full arms make a fall more likely. Two trips instead of one" +
+        (promise ? ", or carrying her grandmother's lantern on its own as promised," : "") +
+        " might have meant no fall at all. Not everything is in your control, but this partly was.",
     },
     {
       id: "prompt",
-      title: "Prompting event",
+      title: "What set it off",
       detail: "You tripped. Someone laughed.",
       reflection:
-        "This is the hardest link to change in the moment. Stones are loose; people laugh. " +
+        "This is the hardest moment to change. Stones are loose; people laugh. " +
         "What happens after it is where most of the choices are.",
     },
     {
       id: "emotion",
-      title: "Emotion",
+      title: "What you felt",
       detail: `Hot face, eyes down, wanting to vanish. ${named}`,
       reflection:
-        "Naming the emotion gives you something to check. If the name is off, you end up " +
-        "checking the facts for a different feeling. The body cues and the urge are useful clues.",
+        "Putting a name on the feeling gives you something to check against what happened. " +
+        "The hot face and the pull to hide are useful clues for finding the name.",
     },
     {
       id: "urge",
-      title: "Urge",
+      title: "What it pushed you to do",
       detail: "Get out of sight. Hide.",
       reflection:
-        "An urge is not a choice yet. Noticing \"this is the urge to hide\" is what opens up " +
-        "the space to pick something else, or to pick hiding on purpose.",
+        "A pull isn't a choice yet. Noticing \"this is the pull to hide\" is what makes room " +
+        "to pick something else, or to pick hiding on purpose.",
     },
     {
       id: "action",
@@ -86,34 +87,34 @@ export function buildChain(r: ChainRecord): ChainLink[] {
       reflection:
         r.hideCount === 0
           ? "Staying kept you next to the facts while they were still fresh. Distress stayed high for a while; that was the cost."
-          : "Hiding worked: distress dropped fast. Meanwhile the lanterns stayed down, and Mara filled the silence with a guess. This is a link where a different action changes what the world does next.",
+          : "Hiding worked: the bad feeling dropped fast. Meanwhile the lanterns stayed down, and Mara and Tobin each decided it was their fault. This is a moment where doing something different changes what happens next.",
     },
     {
       id: "facts",
-      title: "Check the facts",
-      detail: `You looked at ${r.factsSeen} details. You decided the feeling ${r.fit ? "fit" : "didn't fit"}.`,
+      title: "Looking again",
+      detail: `You looked at ${r.factsSeen} details. You decided the feeling ${r.fit ? "matched what happened" : "didn't match what happened"}.`,
       reflection: promise
-        ? "Here the facts were mixed: the laugh and the stares weren't what shame said, but the promise was real. That's what decides between opposite action and repair."
-        : "Here the story shame told and the facts came apart: one laugh, most people didn't notice, the laugher had fallen too. That's what decides between opposite action and repair.",
+        ? "Here it was mixed: the laugh and the stares weren't what the feeling said, but the broken promise was real. Whether a feeling fits is what decides between doing the opposite and fixing something."
+        : "Here the story the feeling told and what actually happened came apart: one laugh, most people didn't notice, and the one who laughed had fallen too. Whether a feeling fits is what decides between doing the opposite and fixing something.",
     },
     {
       id: "skill",
-      title: r.path === "opposite" ? "Opposite action" : "Repair",
+      title: r.path === "opposite" ? "Doing the opposite" : "Making it right",
       detail:
         r.completeness === "full"
           ? `All the way: ${PART_NAMES[r.path]}.`
           : `Part of the way (${PART_NAMES[r.path]}).`,
       reflection:
         r.completeness === "full"
-          ? "Distress went up before it came down. Doing every part is what let it come all the way down."
-          : "Each part you leave out keeps a piece of the old urge in charge. The result followed: partway down, not all the way.",
+          ? "It felt worse before it felt better. Doing every part is what let the feeling come all the way down."
+          : "Each part you leave out keeps a piece of the old pull in charge. The result followed: partway down, not all the way.",
     },
     {
       id: "outcome",
       title: "What followed",
       detail: outcomeText(r),
       reflection:
-        "Outcomes are where a chain ends, not where you change it. To change this one, look back up the chain.",
+        "This is where the day ended up, not where it could change. To change it, look at the moments before.",
     },
   ];
 }

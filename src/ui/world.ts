@@ -3,56 +3,38 @@
 
 import { LANTERN_COUNT, type WorldState } from "../logic/world";
 import type { HotspotId } from "../logic/facts";
-
-const NS = "http://www.w3.org/2000/svg";
-
-function el<K extends keyof SVGElementTagNameMap>(
-  tag: K,
-  attrs: Record<string, string | number> = {},
-  parent?: Element,
-): SVGElementTagNameMap[K] {
-  const node = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
-  parent?.appendChild(node);
-  return node;
-}
+import type { CharacterId, Expression } from "../logic/cast";
+import { drawCharacter, svgEl as el, type DrawnCharacter } from "./characters";
 
 const PLAYER_SPOTS = {
   square: { x: 410, y: 300 },
   edge: { x: 600, y: 300 },
   cave: { x: 722, y: 280 },
+  lane: { x: 160, y: 304 },
 } as const;
 
 /** Where shame's pointing arms aim. */
 const TARGET = { x: 410, y: 265 };
 
-interface Figure {
+interface Placement {
+  id: Exclude<CharacterId, "you">;
   x: number;
   y: number;
-  color: string;
-  scale?: number;
-  back?: boolean;
+  /** Check-the-facts hotspot this character belongs to, if any. */
+  hotspot?: Exclude<HotspotId, "lanterns" | "you">;
+  /** Seen from behind once the facts show they weren't watching. */
+  backWhenSeen?: boolean;
 }
 
-const NPCS: { id: HotspotId; label: string; figures: Figure[] }[] = [
-  {
-    id: "bakers",
-    label: "The bakers",
-    figures: [
-      { x: 252, y: 300, color: "#c9925a", back: true },
-      { x: 276, y: 300, color: "#a8724c", back: true },
-    ],
-  },
-  { id: "mara", label: "Mara", figures: [{ x: 330, y: 300, color: "#6fa3c7" }] },
-  { id: "tobin", label: "Tobin", figures: [{ x: 466, y: 300, color: "#8f9f5c" }] },
-  {
-    id: "kids",
-    label: "The kids",
-    figures: [
-      { x: 522, y: 304, color: "#d27a8f", scale: 0.68 },
-      { x: 543, y: 304, color: "#e0b04a", scale: 0.68 },
-    ],
-  },
+const PLACEMENTS: Placement[] = [
+  { id: "nell", x: 112, y: 302 },
+  { id: "ash", x: 208, y: 302 },
+  { id: "wren", x: 250, y: 300, hotspot: "bakers", backWhenSeen: true },
+  { id: "oda", x: 276, y: 301, hotspot: "bakers", backWhenSeen: true },
+  { id: "mara", x: 330, y: 300, hotspot: "mara" },
+  { id: "tobin", x: 466, y: 300, hotspot: "tobin" },
+  { id: "pip", x: 525, y: 304, hotspot: "kids" },
+  { id: "juno", x: 546, y: 304, hotspot: "kids" },
 ];
 
 const PAPER = ["#e9583c", "#f2b54a", "#e98a3c", "#d9473f"];
@@ -65,26 +47,13 @@ function lanternPos(i: number) {
   return { x, y };
 }
 
-function drawFigure(f: Figure, parent: Element, pointing: boolean) {
-  const s = f.scale ?? 1;
-  const g = el("g", { transform: `translate(${f.x} ${f.y}) scale(${s})` }, parent);
-  el("path", { d: "M-11 0 L-8 -36 Q0 -42 8 -36 L11 0 Z", fill: f.color, class: "body" }, g);
-  el("circle", { cx: 0, cy: -48, r: 10, fill: "#f1d3b3", class: "head" }, g);
-  if (f.back) {
-    el("path", { d: "M-10 -50 Q0 -62 10 -50 L10 -44 Q0 -40 -10 -44 Z", fill: "#5a3b28" }, g);
-  } else {
-    el("circle", { cx: -3.5, cy: -49, r: 1.4, class: "eye" }, g);
-    el("circle", { cx: 3.5, cy: -49, r: 1.4, class: "eye" }, g);
-  }
-  el("line", { x1: -8, y1: -32, x2: -12, y2: -12, class: "arm" }, g);
-  if (pointing) {
-    // Aim toward the player in figure-local coordinates.
-    const dx = (TARGET.x - f.x) / s;
-    const dy = (TARGET.y - (f.y - 32 * s)) / s;
-    const len = Math.hypot(dx, dy);
-    el("line", { x1: 8, y1: -32, x2: 8 + (dx / len) * 22, y2: -32 + (dy / len) * 22, class: "arm point" }, g);
-  }
-  el("line", { x1: 8, y1: -32, x2: 12, y2: -12, class: "arm rest" }, g);
+/** The player's face follows how they're doing unless the story sets it. */
+function playerExpression(w: WorldState, flashback: boolean): Expression {
+  if (w.faces.you) return w.faces.you;
+  if (flashback || w.faceHot) return "worried";
+  if (w.posture === "slumped") return "sad";
+  if (w.ended || (w.lanterns === "hung" && w.squareLight === 1)) return "smile";
+  return "neutral";
 }
 
 export interface WorldView {
@@ -92,11 +61,14 @@ export interface WorldView {
   markSeen(id: HotspotId): void;
   clearSeen(): void;
   onHotspot(handler: ((id: HotspotId) => void) | null): void;
+  /** Mark who can be talked to right now; clicking them calls the handler. */
+  setTalkable(ids: CharacterId[], handler: ((id: CharacterId) => void) | null): void;
 }
 
 export function createWorldView(svg: SVGSVGElement): WorldView {
   const q = <T extends Element>(sel: string) => svg.querySelector(sel) as T;
   let hotspotHandler: ((id: HotspotId) => void) | null = null;
+  let talkHandler: ((id: CharacterId) => void) | null = null;
 
   // Stars
   const stars = q<SVGGElement>(".stars");
@@ -133,8 +105,12 @@ export function createWorldView(svg: SVGSVGElement): WorldView {
     el("ellipse", { cx: (i * 71) % 800, cy: 312 + ((i * 37) % 80), rx: 9, ry: 3 }, cobbles);
   }
 
-  // Props: bakers' stall, Tobin's cart with his cracked lantern, the cart at the edge.
+  // Props: Ash's tea cart, the bakers' stall, Tobin's cart with his cracked lantern, the cart at the edge.
   const props = q<SVGGElement>(".props");
+  el("rect", { x: 186, y: 282, width: 34, height: 14, class: "cart tea" }, props);
+  el("rect", { x: 196, y: 274, width: 8, height: 8, rx: 2, class: "teapot" }, props);
+  el("circle", { cx: 192, cy: 300, r: 4, class: "wheel" }, props);
+  el("circle", { cx: 214, cy: 300, r: 4, class: "wheel" }, props);
   el("rect", { x: 236, y: 266, width: 58, height: 34, class: "stall" }, props);
   el("path", { d: "M230 266 L300 266 L292 254 L238 254 Z", class: "awning" }, props);
   el("rect", { x: 482, y: 282, width: 40, height: 14, class: "cart" }, props);
@@ -164,14 +140,29 @@ export function createWorldView(svg: SVGSVGElement): WorldView {
     glows.push(el("circle", { cx: x, cy: y + 16, r: 26, fill: "url(#glow)", class: "lglow", style: `--i:${i}` }, glowGroup));
   }
 
-  // NPCs. Each group is a hotspot for check the facts.
+  // Villagers. Characters in the same check-the-facts hotspot share a group.
   const npcGroup = q<SVGGElement>(".npcs");
-  const npcEls = new Map<HotspotId, SVGGElement>();
-  for (const npc of NPCS) {
-    const g = el("g", { class: "npc hotspot", "data-hotspot": npc.id, tabindex: -1 }, npcGroup);
-    el("title", {}, g).textContent = npc.label;
-    for (const f of npc.figures) drawFigure(f, g, true);
-    npcEls.set(npc.id, g);
+  const hotspotGroups = new Map<HotspotId, SVGGElement>();
+  const people = new Map<CharacterId, { drawn: DrawnCharacter; wrap: SVGGElement }>();
+  for (const p of PLACEMENTS) {
+    let parent: SVGGElement = npcGroup;
+    if (p.hotspot) {
+      if (!hotspotGroups.has(p.hotspot)) {
+        const g = el("g", { class: "npc hotspot", "data-hotspot": p.hotspot }, npcGroup);
+        hotspotGroups.set(p.hotspot, g);
+      }
+      parent = hotspotGroups.get(p.hotspot)!;
+    } else {
+      parent = el("g", { class: "npc bystander" }, npcGroup);
+    }
+    const wrap = el("g", { class: "person-wrap", "data-character": p.id, transform: `translate(${p.x} ${p.y})` }, parent);
+    if (p.backWhenSeen) wrap.classList.add("back-when-seen");
+    el("title", {}, wrap).textContent = p.id[0].toUpperCase() + p.id.slice(1);
+    const drawn = drawCharacter(p.id, wrap, p.hotspot ? { pointAt: { ...TARGET, fromX: p.x, fromY: p.y } } : {});
+    const bubble = el("g", { class: "talk-bubble" }, wrap);
+    el("path", { d: "M-9 -86 h18 a4 4 0 0 1 4 4 v8 a4 4 0 0 1 -4 4 h-6 l-3 4 l-3 -4 h-6 a4 4 0 0 1 -4 -4 v-8 a4 4 0 0 1 4 -4 z" }, bubble);
+    for (const dx of [-5, 0, 5]) el("circle", { cx: dx, cy: -78, r: 1.5 }, bubble);
+    people.set(p.id, { drawn, wrap });
   }
 
   // Lanterns on the ground: scattered after the fall, or heaped on the fountain steps.
@@ -189,30 +180,30 @@ export function createWorldView(svg: SVGSVGElement): WorldView {
     el("ellipse", { cx: x, cy: y, rx: 9, ry: 8, fill: PAPER[i % PAPER.length] }, heap);
   });
 
-  // Player
+  // Player: a person who can turn into a shell.
   const player = q<SVGGElement>("#player");
   player.classList.add("hotspot");
   player.dataset.hotspot = "you";
   el("title", {}, player).textContent = "You";
   const person = el("g", { class: "person" }, player);
-  el("path", { d: "M-11 0 L-8 -36 Q0 -42 8 -36 L11 0 Z", class: "body" }, person);
-  const head = el("g", { class: "head-group" }, person);
-  el("circle", { cx: 0, cy: -48, r: 10, class: "head" }, head);
-  el("circle", { cx: 0, cy: -46, r: 9, class: "blush" }, head);
-  el("circle", { cx: -3.5, cy: -49, r: 1.4, class: "eye" }, head);
-  el("circle", { cx: 3.5, cy: -49, r: 1.4, class: "eye" }, head);
+  const you = drawCharacter("you", person);
   const stack = el("g", { class: "stack" }, person);
   for (let i = 0; i < 4; i++) {
-    el("ellipse", { cx: 0, cy: -28 - i * 9, rx: 9, ry: 5, fill: PAPER[i % PAPER.length] }, stack);
+    el("ellipse", { cx: 0, cy: -26 - i * 9, rx: 9, ry: 5, fill: PAPER[i % PAPER.length] }, stack);
   }
   const shell = el("g", { class: "shell" }, player);
   el("path", { d: "M-22 0 Q-22 -30 0 -32 Q22 -30 22 0 Z", class: "dome" }, shell);
   el("path", { d: "M-14 -4 Q-12 -20 0 -24 M14 -4 Q12 -20 0 -24 M0 -24 L0 -2", class: "ridges" }, shell);
 
   svg.addEventListener("click", (e) => {
-    const target = (e.target as Element).closest<SVGElement>(".hotspot");
-    const id = target?.dataset.hotspot as HotspotId | undefined;
-    if (id && hotspotHandler) hotspotHandler(id);
+    const target = e.target as Element;
+    if (hotspotHandler) {
+      const spot = target.closest<SVGElement>(".hotspot")?.dataset.hotspot as HotspotId | undefined;
+      if (spot) hotspotHandler(spot);
+      return;
+    }
+    const who = target.closest<SVGElement>(".talkable")?.dataset.character as CharacterId | undefined;
+    if (who && talkHandler) talkHandler(who);
   });
 
   return {
@@ -236,11 +227,14 @@ export function createWorldView(svg: SVGSVGElement): WorldView {
       svg.style.setProperty("--lane-dark", String(w.darkness * 0.22));
       lanterns.forEach((g, i) => g.classList.toggle("lit", i < w.lanternsHung));
       glows.forEach((c, i) => c.classList.toggle("on", night && w.lanterns === "hung" && i < w.lanternsHung));
+
+      for (const [id, { drawn }] of people) drawn.setExpression(flashback ? "neutral" : w.faces[id] ?? "neutral");
+      you.setExpression(playerExpression(w, flashback));
     },
     markSeen(id) {
       if (id === "lanterns") scatter.classList.add("seen");
       else if (id === "you") player.classList.add("seen");
-      else npcEls.get(id)?.classList.add("seen");
+      else hotspotGroups.get(id)?.classList.add("seen");
     },
     clearSeen() {
       svg.querySelectorAll(".seen").forEach((n) => n.classList.remove("seen"));
@@ -248,6 +242,10 @@ export function createWorldView(svg: SVGSVGElement): WorldView {
     onHotspot(handler) {
       hotspotHandler = handler;
       svg.classList.toggle("inspecting", handler !== null);
+    },
+    setTalkable(ids, handler) {
+      talkHandler = handler;
+      for (const [id, { wrap }] of people) wrap.classList.toggle("talkable", ids.includes(id));
     },
   };
 }

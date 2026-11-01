@@ -6,6 +6,7 @@ import { outcome, scoreParts } from "../src/logic/outcome";
 import { canDecide, emotionFits, factsSupport, HOTSPOTS, initialFacts, inspect } from "../src/logic/facts";
 import { buildChain } from "../src/logic/chain";
 import { applyEvent, initialState } from "../src/logic/state";
+import { parseSpoken, talkGroup } from "../src/logic/cast";
 
 const run = (m: MeterState, ...names: string[]) =>
   names.reduce((acc, n) => {
@@ -65,6 +66,12 @@ describe("world", () => {
     expect(w).toMatchObject({ form: "shell", location: "cave" });
   });
 
+  it("morning brings you out of the shell and down to your lane", () => {
+    let w = applyWorldEvent(initialWorld(), { name: "hide" });
+    w = applyWorldEvent(w, { name: "morning" });
+    expect(w).toMatchObject({ form: "person", location: "lane" });
+  });
+
   it("darkness spreads up to a cap and a full ripple clears it", () => {
     let w = initialWorld();
     for (let i = 0; i < 10; i++) w = applyWorldEvent(w, { name: "darkness_spreads" });
@@ -81,7 +88,9 @@ describe("world", () => {
   });
 
   it("validates mood and invitation args", () => {
-    expect(() => applyWorldEvent(initialWorld(), { name: "mara", arg: "evil" })).toThrow();
+    expect(() => applyWorldEvent(initialWorld(), { name: "face", arg: "mara:evil" })).toThrow();
+    expect(() => applyWorldEvent(initialWorld(), { name: "face", arg: "nobody:smile" })).toThrow();
+    expect(applyWorldEvent(initialWorld(), { name: "face", arg: "mara:sad" }).faces.mara).toBe("sad");
     expect(() => applyWorldEvent(initialWorld(), { name: "invitation", arg: "maybe" })).toThrow();
   });
 });
@@ -143,5 +152,26 @@ describe("chain", () => {
     });
     expect(links.map((l) => l.id)).toEqual(["vulnerability", "prompt", "emotion", "urge", "action", "facts", "skill", "outcome"]);
     for (const l of links) expect(l.reflection.length).toBeGreaterThan(20);
+  });
+});
+
+describe("dialogue", () => {
+  it("parses speaker, optional expression, and text", () => {
+    expect(parseSpoken("mara/worried: Okay. Okay.")).toEqual({ speaker: "mara", expression: "worried", text: "Okay. Okay." });
+    expect(parseSpoken("nell: Mm.")).toEqual({ speaker: "nell", expression: null, text: "Mm." });
+  });
+
+  it("treats other lines as narration", () => {
+    expect(parseSpoken("Somebody laughs.")).toBeNull();
+    expect(parseSpoken("note: not a character")).toBeNull();
+  });
+
+  it("rejects unknown expressions so typos surface", () => {
+    expect(() => parseSpoken("mara/furious: no")).toThrow();
+  });
+
+  it("groups the bakers and the kids for talking", () => {
+    expect(talkGroup("wren")).toEqual(["oda"]);
+    expect(talkGroup("mara")).toEqual([]);
   });
 });

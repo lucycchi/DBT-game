@@ -120,8 +120,8 @@ export interface FitAnswers {
 }
 
 export const FIT_QUESTIONS: { key: keyof FitAnswers; text: string }[] = [
-  { key: "rejection", text: "Would people you care about push you away if they knew about this?" },
-  { key: "values", text: "Did you act against your own values?" },
+  { key: "rejection", text: "Would people you care about really push you away over this?" },
+  { key: "values", text: "Did you go against something you care about?" },
 ];
 
 export function emotionFits(a: FitAnswers): boolean {

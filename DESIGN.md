@@ -64,6 +64,18 @@ Loop:
 - First version: one page, inkjs, a meter, a CSS class that dims the background.
   No engine, build pipeline, or asset system until the loop is validated.
 
+## Decisions after the first playthrough (2026-11-01)
+- **Plain language:** player-facing text describes what each skill is for, never its DBT
+  name ("do the opposite, all the way" rather than "opposite action"). DBT names stay in
+  code comments and docs.
+- **No typing:** everything is a choice or a click.
+- **Villagers are people you talk to:** written dialogue in Ink, never AI-generated, so all
+  of it can be reviewed by a clinician. A fuller cast with personalities (CHARACTERS.md),
+  expressive faces, and portraits beside their lines.
+- **The transfer question is out of the game:** it felt preachy inside the story. Playtest
+  facilitators ask the coworker scenario out loud after play instead; it is still the
+  success measure.
+
 ## Open decisions
 - Audience: clinical adjunct (with therapist) vs. general wellness product.
   Affects evidence needs, content review, crisis handling, business model.

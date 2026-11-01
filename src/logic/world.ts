@@ -3,16 +3,16 @@
 
 import type { GameEvent } from "./tags";
 import type { Completeness } from "./outcome";
+import { isCharacterId, isExpression, type CharacterId, type Expression } from "./cast";
 
 export const LANTERN_COUNT = 12;
 export const MAX_DARKNESS = 3;
 
 export type TimeOfDay = "afternoon" | "sunset" | "night" | "morning";
-export type Mood = "neutral" | "thinks-angry" | "unsure" | "warm" | "hurt" | "close";
 
 export interface WorldState {
   time: TimeOfDay;
-  location: "square" | "edge" | "cave";
+  location: "square" | "edge" | "cave" | "lane";
   form: "person" | "shell";
   posture: "upright" | "neutral" | "slumped";
   faceHot: boolean;
@@ -22,7 +22,8 @@ export interface WorldState {
   squareLight: number;
   /** How far darkness has spread into the lanes, 0..MAX_DARKNESS. */
   darkness: number;
-  mara: Mood;
+  /** Each character's current face. Missing means neutral. */
+  faces: Partial<Record<CharacterId, Expression>>;
   invitation: "none" | "missing" | "pending" | "received";
   heirloom: "whole" | "torn" | "mended";
   /** Which lens the square is drawn through during check the facts. */
@@ -41,7 +42,7 @@ export function initialWorld(): WorldState {
     lanternsHung: 0,
     squareLight: 1,
     darkness: 0,
-    mara: "neutral",
+    faces: {},
     invitation: "none",
     heirloom: "whole",
     lens: "none",
@@ -56,7 +57,6 @@ const RIPPLE: Record<Completeness, (w: WorldState) => Partial<WorldState>> = {
   minimal: (w) => ({ squareLight: 0.6, darkness: w.darkness }),
 };
 
-const MOODS: readonly Mood[] = ["neutral", "thinks-angry", "unsure", "warm", "hurt", "close"];
 const INVITES: readonly WorldState["invitation"][] = ["none", "missing", "pending", "received"];
 
 export const WORLD_EVENTS = new Set([
@@ -75,7 +75,7 @@ export const WORLD_EVENTS = new Set([
   "go_back",
   "go_edge",
   "posture",
-  "mara",
+  "face",
   "hang",
   "ripple",
   "invitation",
@@ -102,7 +102,7 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
     case "square_dark":
       return { ...w, lanterns: "heaped", squareLight: 0.1 };
     case "morning":
-      return { ...w, time: "morning", form: "person", squareLight: 1 };
+      return { ...w, time: "morning", form: "person", location: "lane", squareLight: 1 };
     case "darkness_spreads":
       return { ...w, darkness: Math.min(MAX_DARKNESS, w.darkness + 1) };
     case "return_distress":
@@ -115,9 +115,12 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
       return { ...w, location: "edge", form: "person" };
     case "posture":
       return { ...w, posture: ev.arg === "up" ? "upright" : "slumped", faceHot: ev.arg !== "up" };
-    case "mara":
-      if (!MOODS.includes(ev.arg as Mood)) throw new Error(`Unknown mood: ${ev.arg}`);
-      return { ...w, mara: ev.arg as Mood };
+    case "face": {
+      // arg is "id:expression", e.g. "mara:sad"
+      const [id, expr] = (ev.arg ?? "").split(":");
+      if (!isCharacterId(id) || !isExpression(expr)) throw new Error(`Bad face: ${ev.arg}`);
+      return { ...w, faces: { ...w.faces, [id]: expr } };
+    }
     case "hang": {
       const n = Math.max(0, Math.min(LANTERN_COUNT, Number(ev.arg ?? LANTERN_COUNT)));
       return { ...w, lanterns: "hung", lanternsHung: n };
