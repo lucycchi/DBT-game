@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lantern Night</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="title" class="overlay">
+    <div class="title-card">
+      <p class="eyebrow">Prototype · working title</p>
+      <h1>Lantern Night</h1>
+      <p>The village is hanging lanterns for the festival, and you're carrying them. About 10 to 15 minutes.</p>
+      <p class="small">There are no right or wrong choices here. Things you do change the village; the village can always recover.</p>
+      <div class="title-actions">
+        <button id="start-main" class="primary">Begin</button>
+        <button id="start-promise" class="ghost">Variant: the borrowed lantern</button>
+      </div>
+      <p class="small think-aloud">Playtesting? Please think out loud as you play.</p>
+    </div>
+  </div>
+
+  <main class="layout">
+    <section class="stage">
+      <svg id="world" viewBox="0 0 800 400" role="img" aria-label="The village square">
+        <defs>
+          <radialGradient id="glow">
+            <stop offset="0" stop-color="#ffd27a" stop-opacity="0.95"/>
+            <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="square-glow" cx="0.5" cy="0.5" r="0.5">
+            <stop offset="0" stop-color="#ffcf6e" stop-opacity="0.55"/>
+            <stop offset="1" stop-color="#ffcf6e" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="lane-fade" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" stop-color="#03040d" stop-opacity="1"/>
+            <stop offset="0.7" stop-color="#03040d" stop-opacity="0.85"/>
+            <stop offset="1" stop-color="#03040d" stop-opacity="0"/>
+          </linearGradient>
+          <radialGradient id="vignette" cx="0.5" cy="0.55" r="0.75">
+            <stop offset="0.45" stop-color="#7a0b1c" stop-opacity="0"/>
+            <stop offset="1" stop-color="#7a0b1c" stop-opacity="0.75"/>
+          </radialGradient>
+        </defs>
+        <rect class="sky" width="800" height="400"/>
+        <g class="stars"></g>
+        <path class="hill" d="M560 400 L560 300 Q640 170 800 135 L800 400 Z"/>
+        <path class="hill-path" d="M565 300 Q640 270 690 262"/>
+        <ellipse class="cave" cx="722" cy="258" rx="42" ry="30"/>
+        <g class="houses"></g>
+        <rect class="ground" y="300" width="800" height="100"/>
+        <g class="cobbles"></g>
+        <g class="fountain">
+          <ellipse cx="390" cy="318" rx="48" ry="10"/>
+          <rect x="350" y="300" width="80" height="18" rx="4"/>
+          <rect x="384" y="270" width="12" height="32" rx="3"/>
+        </g>
+        <g class="props"></g>
+        <path class="string" d="M230 120 Q390 175 550 120"/>
+        <g class="lanterns"></g>
+        <g class="npcs"></g>
+        <g class="ground-lanterns"></g>
+        <g id="player"></g>
+        <rect class="lane-dark" x="0" y="0" width="300" height="400" fill="url(#lane-fade)"/>
+        <rect class="night" width="800" height="400"/>
+        <ellipse class="square-glow" cx="390" cy="210" rx="260" ry="170" fill="url(#square-glow)"/>
+        <g class="lantern-glows"></g>
+        <rect class="lens-shame" width="800" height="400" fill="url(#vignette)"/>
+      </svg>
+
+      <aside id="meter" aria-label="How you feel">
+        <div class="bar">
+          <div class="bar-label"><span>Distress</span><span class="val" data-val="distress"></span></div>
+          <div class="track"><div class="fill distress"></div></div>
+        </div>
+        <div class="bar">
+          <div class="bar-label"><span>Urge to hide</span><span class="val" data-val="urge"></span></div>
+          <div class="track"><div class="fill urge"></div></div>
+        </div>
+        <div class="curve">
+          <div class="bar-label"><span>Distress over time</span></div>
+          <svg viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
+            <polyline class="curve-line" points=""/>
+          </svg>
+        </div>
+      </aside>
+    </section>
+
+    <section class="story" aria-live="polite">
+      <div id="text"></div>
+      <div id="panel"></div>
+      <div id="choices"></div>
+    </section>
+  </main>
+
+  <footer>
+    A playtest prototype about one DBT skill. It is not therapy and not a crisis resource.
+    If you are in danger or thinking about hurting yourself, contact local emergency services
+    (in the US, call or text 988).
+  </footer>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>
