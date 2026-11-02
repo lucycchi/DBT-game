@@ -1228,6 +1228,18 @@ export function charKey(id: CharacterId, expr: Expression, frame: Frame = "close
   return frame === "closed" ? `char-${id}-${expr}` : `char-${id}-${expr}-${frame}`;
 }
 
+/** The walk cycle: which foot is lifted in each of its eight frames. */
+export const WALK_STEPS = [0, 0.7, 1, 0.7, 0, -0.7, -1, -0.7];
+
+export function walkKey(id: CharacterId, expr: Expression, i: number): string {
+  return `char-${id}-${expr}-walk${i}`;
+}
+
+/** One walking frame: turned toward the direction of travel, arms swinging against the legs. */
+export function walkTextureSVG(id: CharacterId, expr: Expression, i: number): string {
+  return plushSVG(id, expr, { step: WALK_STEPS[i], turn: 1, swing: true }, CHAR_PX);
+}
+
 /** SVG for one character frame; frames other than the calm face are made on demand. */
 export function charTextureSVG(id: CharacterId, expr: Expression, frame: Frame = "closed"): string {
   return plushSVG(id, expr, { frame }, CHAR_PX);
@@ -1636,6 +1648,8 @@ export function allTextures(): TextureSpec[] {
     specs.push({ key: charKey(id, "neutral", "open"), svg: charTextureSVG(id, "neutral", "open") });
     specs.push({ key: charKey(id, "neutral", "blink"), svg: charTextureSVG(id, "neutral", "blink") });
     if (id !== "you") specs.push({ key: `char-${id}-point`, svg: plushSVG(id, "neutral", { pointing: true }, CHAR_PX) });
+    // You walk a lot, so your calm walk cycle is ready from the start; others are made when needed.
+    if (id === "you") WALK_STEPS.forEach((_, i) => specs.push({ key: walkKey(id, "neutral", i), svg: walkTextureSVG(id, "neutral", i) }));
   }
   PAPER.forEach((p, i) => specs.push({ key: `lantern-${i}`, svg: lanternSVG(p, false, false) }));
   specs.push({ key: "lantern-torn", svg: lanternSVG(PAPER[5], true, false) });

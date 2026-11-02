@@ -4,10 +4,12 @@
 import Phaser from "phaser";
 import type { CharacterId, Expression } from "../logic/cast";
 import { FEELINGS, type Frame, type Motion } from "../ui/plush";
-import { charKey } from "./art";
+import { charKey, walkKey } from "./art";
 
 /** Makes sure a texture exists; returns false while it is still being made. */
 export type EnsureTexture = (id: CharacterId, expr: Expression, frame: Frame) => boolean;
+/** The same for a walking frame (0..7). */
+export type EnsureWalk = (id: CharacterId, expr: Expression, i: number) => boolean;
 
 export class Puppet {
   expr: Expression = "neutral";
@@ -15,6 +17,8 @@ export class Puppet {
   /** Movement offsets laid over the sprite's base position, angle and scale. */
   readonly m = { dy: 0, angle: 0, sx: 1, sy: 1 };
   private mouthOpen = false;
+  /** Which walking frame is showing, or null when standing. */
+  private walkFrame: number | null = null;
   private blinkUntil = 0;
   private nextBlink: number;
   private motion: Phaser.Tweens.Tween[] = [];
@@ -25,6 +29,7 @@ export class Puppet {
     readonly img: Phaser.GameObjects.Image,
     private ensure: EnsureTexture,
     private still: boolean,
+    private ensureWalk: EnsureWalk | null = null,
   ) {
     this.nextBlink = scene.time.now + 1500 + Math.random() * 3000;
     this.idle();
@@ -40,6 +45,13 @@ export class Puppet {
     this.ensure(this.id, expr, "open");
     this.ensure(this.id, expr, "blink");
     if (changed && !pointing) this.play(FEELINGS[expr].motion);
+    this.refresh();
+  }
+
+  /** Show a walking frame (0..7), or null to stand. */
+  setWalk(i: number | null) {
+    if (i === this.walkFrame) return;
+    this.walkFrame = i;
     this.refresh();
   }
 
@@ -69,6 +81,12 @@ export class Puppet {
   private refresh(now = this.scene.time.now) {
     if (this.pointing) {
       this.img.setTexture(`char-${this.id}-point`);
+      return;
+    }
+    // Walking (and not talking): the walk cycle for this feeling, once it's ready.
+    if (this.walkFrame !== null && !this.mouthOpen && this.ensureWalk?.(this.id, this.expr, this.walkFrame)) {
+      const key = walkKey(this.id, this.expr, this.walkFrame);
+      if (this.img.texture.key !== key) this.img.setTexture(key);
       return;
     }
     const frame: Frame = now < this.blinkUntil ? "blink" : this.mouthOpen ? "open" : "closed";

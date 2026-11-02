@@ -10,7 +10,7 @@ import type { HotspotId } from "../logic/facts";
 import type { WorldState } from "../logic/world";
 import type { Sound } from "../audio/sound";
 import { pickBark } from "./barks";
-import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, WHEEL, WINDOW_LIGHTS, SKIES } from "./art";
+import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, walkKey, walkTextureSVG, WHEEL, WINDOW_LIGHTS, SKIES } from "./art";
 import { Puppet } from "./puppet";
 import type { Frame } from "../ui/plush";
 import {
@@ -152,6 +152,12 @@ export class WorldScene extends Phaser.Scene {
   private region: Region = REGIONS[0];
   private tiding = false;
   private tideAction: (() => void) | null = null;
+  /** How bad it feels, 0..1, eased toward the meter; drains the colors and closes the world in. */
+  private feel = 0;
+  private feelTarget = 0;
+  private colorFx: Phaser.FX.ColorMatrix | null = null;
+  private closeFx: Phaser.FX.Vignette | null = null;
+  private walkClock = 0;
   private gust = 0;
   /** Ignore the key press that closed the dialogue, which Phaser sees a moment later. */
   private unlockedAt = 0;
@@ -251,7 +257,11 @@ export class WorldScene extends Phaser.Scene {
     this.candle = this.add.image(22, -40, "candle").setScale(0.7);
     this.shell = this.add.image(0, 0, "shell").setOrigin(0.5, 1).setScale(0.8).setVisible(false);
     this.player = this.add.container(600, 600, [this.body, this.stack, this.candle, this.shell]).setDepth(5);
-    this.you = new Puppet(this, "you", this.body, this.ensureCharTexture, this.reducedMotion);
+    this.you = new Puppet(this, "you", this.body, this.ensureCharTexture, this.reducedMotion, this.ensureWalkTexture);
+    // When it feels bad, the colors drain and the world closes in around you (WebGL only).
+    const fx = this.cameras.main.postFX;
+    this.colorFx = fx ? fx.addColorMatrix() : null;
+    this.closeFx = fx ? fx.addVignette(0.5, 0.55, 1, 0) : null;
 
     this.laneFog = this.add.image(0, 0, "fog").setOrigin(0).setDisplaySize(1250, VIEW_H).setDepth(20).setAlpha(0);
     this.dark = this.add.renderTexture(0, 0, VIEW_W, VIEW_H).setOrigin(0).setScrollFactor(0).setDepth(25);
@@ -405,7 +415,8 @@ export class WorldScene extends Phaser.Scene {
       n.img.setFlipX(pointing ? x > this.player.x : false);
     }
 
-    this.tweens.add({ targets: this.vignette, alpha: flashback ? 0.85 : 0, duration: 900 });
+    // The red haze is gone: how bad it feels now shows as drained colors and the world closing in.
+    this.vignette.setAlpha(0);
     this.hooks.sound.setMood(this.moodFor(w));
   }
 
@@ -472,6 +483,24 @@ export class WorldScene extends Phaser.Scene {
     if (id === "you") this.you.setMouth(open);
     else this.npcs.get(id as Npc)?.puppet.setMouth(open);
   }
+
+  /** How bad it feels right now (the meter's distress, 0..100). */
+  setFeeling(distress: number) {
+    this.feelTarget = Phaser.Math.Clamp((distress - 25) / 60, 0, 1);
+  }
+
+  /** Make a walking frame on first use; false until it's ready. */
+  private ensureWalkTexture = (id: CharacterId, expr: Expression, i: number): boolean => {
+    const key = walkKey(id, expr, i);
+    if (this.textures.exists(key)) return true;
+    if (!this.pendingTextures.has(key)) {
+      this.pendingTextures.add(key);
+      this.load.svg(key, svgUri(walkTextureSVG(id, expr, i)));
+      this.load.once(`filecomplete-svg-${key}`, () => this.pendingTextures.delete(key));
+      if (!this.load.isLoading()) this.load.start();
+    }
+    return false;
+  };
 
   /** Make a character frame on first use; false until it's ready. */
   private ensureCharTexture = (id: CharacterId, expr: Expression, frame: Frame): boolean => {
@@ -757,6 +786,15 @@ export class WorldScene extends Phaser.Scene {
     this.body.setFlipX(this.facing < 0);
     this.candle.x = 22 * this.facing;
     this.stack.x = 10 * this.facing;
+    // The walk cycle: turned toward where you're going, arms swinging; slower when it feels bad.
+    if (this.walking && this.world.form === "person" && !this.reducedMotion) {
+      this.walkClock += dt * (this.feel > 0.5 ? 7 : 11);
+      this.you.setWalk(Math.floor(this.walkClock) % 8);
+    } else {
+      this.walkClock = 0;
+      this.you.setWalk(null);
+    }
+    this.updateFeelingFx(dt);
     let bob = 0;
     if (this.walking && this.world.form === "person") {
       this.stepClock += dt;
@@ -802,6 +840,24 @@ export class WorldScene extends Phaser.Scene {
     if (!this.locked && !this.approaching && !this.hanging && !this.tiding) this.maybeBark();
     if (!this.approaching && !this.hanging && !this.tiding && !this.locked) this.updatePrompt();
     this.drawDarkness();
+  }
+
+  private updateFeelingFx(dt: number) {
+    this.feel = Phaser.Math.Linear(this.feel, this.feelTarget, Math.min(1, dt * 1.5));
+    const k = this.feel;
+    if (this.colorFx) {
+      this.colorFx.reset();
+      this.colorFx.saturate(-0.85 * k);
+      this.colorFx.brightness(1 - 0.12 * k, true);
+    }
+    if (this.closeFx) {
+      const cam = this.cameras.main;
+      this.closeFx.x = Phaser.Math.Clamp((this.player.x - cam.scrollX) / VIEW_W, 0, 1);
+      // The shader measures y from the bottom of the screen.
+      this.closeFx.y = Phaser.Math.Clamp(1 - (this.player.y - 60 - cam.scrollY) / VIEW_H, 0, 1);
+      this.closeFx.radius = 1 - 0.45 * k;
+      this.closeFx.strength = 0.65 * k;
+    }
   }
 
   private move(dt: number) {

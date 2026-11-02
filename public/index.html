@@ -17,13 +17,13 @@
     <div id="hud"></div>
 
     <aside id="meter" aria-label="How you feel">
-      <div class="bar">
-        <div class="bar-label"><span>How bad it feels</span><span class="val" data-val="distress"></span></div>
-        <div class="track"><div class="fill distress"></div></div>
+      <div class="bar" role="img">
+        <div class="ends"><span>Feeling bad</span><span>Feeling good</span></div>
+        <div class="track feel"><span class="dot feeling"></span></div>
       </div>
-      <div class="bar">
-        <div class="bar-label"><span>Pull to hide</span><span class="val" data-val="urge"></span></div>
-        <div class="track"><div class="fill urge"></div></div>
+      <div class="bar" role="img">
+        <div class="ends"><span>Want to hide</span><span>Be with people</span></div>
+        <div class="track pull"><span class="dot pull"></span></div>
       </div>
       <div class="curve">
         <svg viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">

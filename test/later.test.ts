@@ -218,3 +218,14 @@ describe("chapter six: the tide", () => {
     expect(r.state.world.ended).toBe(true);
   });
 });
+
+describe("two-sided meters", () => {
+  it("calm sits toward the easy end, the worst toward the painful end, and neither end is quite reached", async () => {
+    const { meterMarks } = await import("../src/logic/meter");
+    expect(meterMarks(10, 0).feeling).toBeGreaterThan(75);
+    expect(meterMarks(100, 100)).toEqual({ feeling: 4, pull: 4 });
+    expect(meterMarks(0, 0).pull).toBeLessThan(80);
+    expect(meterMarks(50, 50).feeling).toBeGreaterThan(40);
+    expect(meterMarks(50, 50).feeling).toBeLessThan(60);
+  });
+});

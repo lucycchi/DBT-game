@@ -150,3 +150,19 @@ export function applyMeterEvent(m: MeterState, ev: GameEvent): MeterState {
       return m;
   }
 }
+
+/**
+ * Where the two meter markers sit, 0 (left) to 100 (right). The feeling slider has the
+ * painful end on the left and the easy end on the right; the pull slider has the chapter's
+ * pull (to hide, to rest, to check the road...) on the left. Neither end is "wrong": no
+ * pull at all sits a little right of middle, and the ends are never quite reached.
+ */
+export function meterMarks(distress: number, urge: number): { feeling: number; pull: number } {
+  const clampPct = (n: number) => Math.max(4, Math.min(96, Math.round(n)));
+  return { feeling: clampPct(92 - distress * 0.88), pull: clampPct(72 - urge * 0.68) };
+}
+
+/** A plain word for where a marker sits, for screen readers. */
+export function markWord(pos: number): string {
+  return pos < 20 ? "far left" : pos < 40 ? "left of middle" : pos <= 60 ? "middle" : pos <= 80 ? "right of middle" : "far right";
+}

@@ -51,20 +51,25 @@ const EVENT_SFX: Partial<Record<string, Sfx>> = {
 };
 
 /** Goal and meter labels for each chapter. */
-const CHAPTERS: Record<number, { title: string; goal: string; meter: [string, string] }> = {
-  1: { title: "Lantern Night", goal: "Light up the square for the lantern festival.", meter: ["How bad it feels", "Pull to hide"] },
-  2: { title: "Chapter two: The morning after", goal: "Get ready for the last night of the festival.", meter: ["How worn out you are", "Pull to rest"] },
-  3: { title: "Chapter three: The storm", goal: "Keep the lanterns lit through the storm.", meter: ["How bad it feels", "Racing thoughts"] },
-  4: { title: "Chapter four: Opening day", goal: "Help Ash open the tea room.", meter: ["How tense it feels", "Pull to just say yes"] },
-  5: { title: "Chapter five: The first snow", goal: "Get Pip and Juno through the night.", meter: ["How worried you are", "Pull to check the road"] },
-  6: { title: "Chapter six: The tide", goal: "Help Tobin and Hesketh with the shed.", meter: ["How much it hurts", "Fighting it"] },
+/**
+ * Goal and meter words for each chapter. Each meter is a slider between two words: the
+ * feeling from painful to easy, and the chapter's pull (left) against its opposite (right).
+ */
+type Ends = [string, string];
+const CHAPTERS: Record<number, { title: string; goal: string; meter: [Ends, Ends] }> = {
+  1: { title: "Lantern Night", goal: "Light up the square for the lantern festival.", meter: [["Feeling bad", "Feeling good"], ["Want to hide", "Be with people"]] },
+  2: { title: "Chapter two: The morning after", goal: "Get ready for the last night of the festival.", meter: [["Running on empty", "Rested"], ["Stop and rest", "Keep pushing"]] },
+  3: { title: "Chapter three: The storm", goal: "Keep the lanterns lit through the storm.", meter: [["Panicking", "Steady"], ["Racing thoughts", "Clear head"]] },
+  4: { title: "Chapter four: Opening day", goal: "Help Ash open the tea room.", meter: [["Tense", "At ease"], ["Just say yes", "Say what I mean"]] },
+  5: { title: "Chapter five: The first snow", goal: "Get Pip and Juno through the night.", meter: [["Worried", "Settled"], ["Check the road", "Stay with the kids"]] },
+  6: { title: "Chapter six: The tide", goal: "Help Tobin and Hesketh with the shed.", meter: [["Hurting", "Okay"], ["Fight it", "Let it be"]] },
 };
 
 function showChapter(level: number) {
   const c = CHAPTERS[level];
   hud.setGoal(c.goal);
   hud.showArea(c.title);
-  document.querySelectorAll<HTMLElement>("#meter .bar-label span:first-child").forEach((el, i) => (el.textContent = c.meter[i]));
+  meter.setLabels(c.meter);
 }
 
 let world: WorldScene | null = null;
@@ -88,6 +93,7 @@ function apply(ev: GameEvent) {
     return;
   }
   world?.applyState(state.world);
+  world?.setFeeling(state.meter.distress);
   meter.render(state.meter);
   if (ev.name === "chapter") showChapter(state.world.level);
   const sfx = EVENT_SFX[ev.name];
