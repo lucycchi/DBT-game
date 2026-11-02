@@ -114,7 +114,10 @@ function ground(w: number, seed: number, cobbled: boolean) {
       const y = GROUND_Y + 48 + row * 44;
       const sz = 22 + row * 7;
       for (let x = (row % 2) * 60 + 20; x < w + 40; x += 120 + row * 20) {
-        s += `<ellipse cx="${f(x + r() * 20)}" cy="${y}" rx="${sz * 1.5}" ry="${f(sz * 0.55)}" fill="#e6c38b"/><ellipse cx="${f(x - 4)}" cy="${y - 3}" rx="${f(sz * 0.9)}" ry="${f(sz * 0.25)}" fill="#f8e6c2" opacity=".7"/>`;
+        const cx = x + r() * 20;
+        // Big stones cut in half at the edge of an area would draw a hard line where two areas meet.
+        if (cx - sz * 1.5 < 0 || cx + sz * 1.5 > w) continue;
+        s += `<ellipse cx="${f(cx)}" cy="${y}" rx="${sz * 1.5}" ry="${f(sz * 0.55)}" fill="#e6c38b"/><ellipse cx="${f(cx - 4)}" cy="${y - 3}" rx="${f(sz * 0.9)}" ry="${f(sz * 0.25)}" fill="#f8e6c2" opacity=".7"/>`;
       }
     }
   }
@@ -284,6 +287,8 @@ function squareSVG(a: Area): string {
   s += `<circle cx="${cx - 34}" cy="${GROUND_Y - 16}" r="17" fill="#7a5a44"/><circle cx="${cx - 34}" cy="${GROUND_Y - 16}" r="6" fill="#c98a5e"/><circle cx="${cx + 34}" cy="${GROUND_Y - 16}" r="17" fill="#7a5a44"/><circle cx="${cx + 34}" cy="${GROUND_Y - 16}" r="6" fill="#c98a5e"/>`;
   s += lamppost(c, lx(2120)) + lamppost(c, lx(3000));
   s += ground(w, 41, true);
+  // Market Street's paving fades into the square's cobbles, instead of stopping in a straight line.
+  s += `<defs><linearGradient id="pave-fade"><stop offset="0" stop-color="#f2d7a2"/><stop offset="1" stop-color="#f2d7a2" stop-opacity="0"/></linearGradient></defs><rect x="0" y="${GROUND_Y + 8}" width="220" height="${VIEW_H - GROUND_Y}" fill="url(#pave-fade)"/>`;
   // The loose cobblestone, tipped up by the fountain
   s += `<ellipse cx="${lx(2470)}" cy="${GROUND_Y + 12}" rx="18" ry="8" fill="#d8b582" transform="rotate(-14 ${lx(2470)} ${GROUND_Y + 12})"/><ellipse cx="${lx(2470) - 3}" cy="${GROUND_Y + 9}" rx="9" ry="3" fill="#fbecd0" transform="rotate(-14 ${lx(2470)} ${GROUND_Y + 12})"/>`;
   return wrap(w, VIEW_H, s);
@@ -307,6 +312,13 @@ function hillSVG(a: Area): string {
   // Grass
   s += `<path d="M0 ${VIEW_H} L${pts.join(" L")} L${w} ${VIEW_H} Z" fill="#9fd07a"/>`;
   s += `<path d="M${pts.join(" L")}" fill="none" stroke="#8cc26a" stroke-width="10"/>`;
+  // The square's cobbles run on a little way and fade into the grass, instead of stopping in a straight line.
+  s += `<path d="M0 ${GROUND_Y + 8} C90 ${GROUND_Y + 14} 170 ${GROUND_Y + 70} 260 ${VIEW_H} L0 ${VIEW_H} Z" fill="#ecd3a6"/>`;
+  for (let row = 0; row < 11; row++) {
+    const y = GROUND_Y + 22 + row * 20;
+    const reach = 40 + row * 20;
+    for (let x = (row % 2) * 22; x < reach; x += 44) s += `<ellipse cx="${x}" cy="${y}" rx="18" ry="7" fill="${(row + x) % 3 ? "#e0c08c" : "#e6c99a"}"/>`;
+  }
   for (let x = 40; x < hx - 60; x += 70) s += `<ellipse cx="${x}" cy="${f(groundY(a.x0 + x) + 12)}" rx="22" ry="7" fill="#f2d7a2"/>`;
   for (let i = 0; i < 50; i++) {
     const x = r() * w;

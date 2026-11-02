@@ -28,6 +28,8 @@ export interface StoryChoice {
   target: ChoiceTarget | null;
   /** `#new`: someone you haven't talked to yet in this part of the story. */
   fresh: boolean;
+  /** Where the choice is written in the story; stable across playthroughs. */
+  source: string;
 }
 
 export function parseChoiceTarget(tags: readonly string[] | null | undefined): ChoiceTarget | null {
@@ -102,11 +104,17 @@ export class Engine {
       text: c.text,
       target: parseChoiceTarget(c.tags),
       fresh: (c.tags ?? []).some((t) => t.trim() === "new"),
+      source: c.sourcePath,
     }));
   }
 
   choose(index: number): void {
     this.story.ChooseChoiceIndex(index);
+  }
+
+  /** Problems the story reported while running (Ink warnings and errors). */
+  get problems(): string[] {
+    return [...(this.story.currentErrors ?? []), ...(this.story.currentWarnings ?? [])];
   }
 
   get ended(): boolean {

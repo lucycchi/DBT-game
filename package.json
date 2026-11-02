@@ -10,7 +10,8 @@
     "build": "npm run ink && npm run bundle",
     "dev": "npm run ink && esbuild src/main.ts --bundle --format=esm --sourcemap --outfile=public/main.js --servedir=public --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "explore": "EXPLORE=1 vitest run test/explore.test.ts"
   },
   "dependencies": {
     "inkjs": "^2.4.0",

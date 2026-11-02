@@ -370,3 +370,15 @@ describe("conversations remember", () => {
     expect(t).toMatch(/"Not me, not today\." I remember/);
   });
 });
+
+describe("long chains", () => {
+  it("Tobin remembers the stone from the festival after the storm", () => {
+    const run = play(
+      "main",
+      ["pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular", "talk to tobin", "talk about the stone", "somebody should fix", "goodbye", "walk home",
+       ...REST_WELL, "cold water", "slow your breathing", "pip", "talk to tobin", "ask about the stone", "goodbye", "walk home"],
+      { fit: false },
+    );
+    expect(text(run)).toMatch(/Fixed it this morning/);
+  });
+});

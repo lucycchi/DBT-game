@@ -439,7 +439,9 @@ export class WorldScene extends Phaser.Scene {
             this.hooks.onApproachEvent("oa_step");
           }
         }
-        let vx = PULL_DRIFT * 1.6;
+        // Behind the cart at the edge of the square the pull is weak, so you can choose to stay there.
+        const sheltered = this.player.x > 2980 && this.player.x < 3250;
+        let vx = PULL_DRIFT * (sheltered ? 0.15 : 1.6);
         if (left) {
           vx -= up ? 330 : 190;
           walk += dt;
