@@ -4,7 +4,9 @@
 
 import { CHARACTER_IDS, EXPRESSIONS, type CharacterId, type Expression } from "../logic/cast";
 import { characterSVG as plushSVG, FEET, type Frame } from "../ui/plush";
-import { AREAS, GROUND_Y, HOOKS, POLES, PROPS, SHED_ITEMS, groundY, VIEW_H, type Area } from "./layout";
+import { AREAS, GROUND_Y, HOME_DOOR, HOOKS, POLES, PROPS, SHED_ITEMS, groundY, VIEW_H, type Area } from "./layout";
+import { G as HOME_GROUND, homeMarkup } from "./homes";
+import { DEFAULT_HOME, type HomeChoice } from "../logic/appearance";
 
 export const PAPER = ["#e9583c", "#f2b54a", "#e98a3c", "#d9473f", "#f0c75e", "#c94f6d"];
 const FLAGS = ["#f08a6a", "#f6d36a", "#8fcc76", "#7fc4dc", "#e98fb4"];
@@ -409,6 +411,35 @@ function workshopFront(c: Ctx, x: number, w: number, h: number, wall: string, ro
 
 // --- Areas ------------------------------------------------------------------------
 
+/** The player's home on Lantern Lane. Set from the title screen and at save points. */
+let playerHome: HomeChoice = DEFAULT_HOME;
+export function setPlayerHome(home: HomeChoice): void {
+  playerHome = home;
+}
+
+/** Home units to lane pixels: a little bigger than the panels, a starter home beside taller neighbors. */
+const HOME_SCALE = 1.15;
+
+function yourHouse(c: Ctx): string {
+  // Draw once to find the door, then place it so the door lands on HOME_DOOR.
+  const at = homeMarkup(playerHome, { gardenInFront: true }).door;
+  const ox = HOME_DOOR - at * HOME_SCALE;
+  const oy = GROUND_Y - HOME_GROUND * HOME_SCALE;
+  const { svg } = homeMarkup(playerHome, {
+    gardenInFront: true,
+    snow: c.snow,
+    light: (x, y) => light(c, ox + x * HOME_SCALE, oy + y * HOME_SCALE),
+  });
+  return `<g transform="translate(${f(ox)} ${f(oy)}) scale(${HOME_SCALE})">${svg}</g>`;
+}
+
+/** Lantern Lane again after your home changes, and its window lights. */
+export function laneTextures(): TextureSpec[] {
+  const lane = AREAS.find((a) => a.id === "lane")!;
+  for (let i = WINDOW_LIGHTS.length - 1; i >= 0; i--) if (WINDOW_LIGHTS[i].x >= lane.x0 && WINDOW_LIGHTS[i].x < lane.x1) WINDOW_LIGHTS.splice(i, 1);
+  return [{ key: "area-lane", svg: laneSVG(lane) }, { key: "area-lane-snow", svg: laneSVG(lane, true) }];
+}
+
 function laneSVG(a: Area, snowy = false): string {
   const c: Ctx = { ox: a.x0, snow: snowy, quiet: snowy };
   const w = a.x1 - a.x0;
@@ -418,11 +449,11 @@ function laneSVG(a: Area, snowy = false): string {
   s += gableCottage(c, 150, 250, 190, "#fff1d6", "#e57b5f", { door: 300, doorColor: "#f2c43a" });
   s += `<rect x="260" y="${GROUND_Y - 6}" width="100" height="14" rx="5" fill="#d8c4a8"/>`;
   s += townhouse(c, 440, 130, 236, "#dcefe1", "#6fa7c9");
-  // Your house, with its porch; the front door is at x 740.
-  s += porchHouse(c, 600, 280, 165, "#e3ecf7", "#e8a04f");
-  s += gableCottage(c, 905, 120, 150, "#fde6a8", "#b986c9");
-  s += lamppost(c, 415) + lamppost(c, 890);
-  s += sign(740, GROUND_Y - 300, "LANTERN LANE", snowy);
+  // Your house, the one you chose, with its front door at x 740. Its plot runs to the
+  // tree at the end of the lane, so there's room for it to grow.
+  s += yourHouse(c);
+  s += lamppost(c, 415);
+  s += sign(300, GROUND_Y - 372, "LANTERN LANE", snowy);
   s += ground(c, w, 3, false);
   return wrap(w, VIEW_H, s);
 }

@@ -134,6 +134,20 @@ what's on screen matches what's said.
   for once. They make one new lantern and hang it on the harbour wall. (DBT: radical
   acceptance, turning the mind, willing hands.)
 
+## Your look and your home (2026-11-02)
+Something to keep coming back to, without a currency or a shop.
+- **Your character:** chosen on the first new game, changeable from the title screen. Two bodies
+  (girl, boy) that change only the face; six animals, three furs each, five outfits in six colors,
+  a hat and an extra. All outfits are open to both bodies; the defaults match the body.
+- **Your home:** your house on Lantern Lane (door still at x 740). Four ready-made styles (gable
+  cottage, mushroom house, hill burrow, round tower) in four paints, or one designed part by part
+  (shape, roof, walls, door, windows, chimney, something on the roof, four colors).
+- **It grows:** each save point gives the home room for one more addition (an upper floor, a side
+  room, a porch, a garden), whatever happened in the chapter, so it never rewards "good" choices.
+  The player picks which, then or later from the title screen. The garden is where light farming
+  could go later.
+- Choices are saved in their own browser save (`lantern-night:looks`), so starting over keeps them.
+
 ## Open decisions
 - Audience: clinical adjunct (with therapist) vs. general wellness product.
   Affects evidence needs, content review, crisis handling, business model.

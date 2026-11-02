@@ -10,7 +10,7 @@ import type { HotspotId } from "../logic/facts";
 import type { WorldState } from "../logic/world";
 import type { Sound } from "../audio/sound";
 import { pickBark } from "./barks";
-import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, walkKey, walkTextureSVG, WHEEL, WINDOW_LIGHTS, SKIES } from "./art";
+import { allTextures, laneTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, walkKey, walkTextureSVG, WHEEL, WINDOW_LIGHTS, SKIES } from "./art";
 import { Puppet } from "./puppet";
 import type { Frame } from "../ui/plush";
 import {
@@ -197,9 +197,30 @@ export class WorldScene extends Phaser.Scene {
   }
 
   preload() {
-    // On "Play again" the scene restarts; textures from the first run are reused.
-    if (this.textures.exists("sky-afternoon")) return;
-    for (const t of allTextures()) this.load.svg(t.key, svgUri(t.svg));
+    // On "Play again" the scene restarts; textures from the first run are reused,
+    // except yours and your house's, which are redrawn in case you changed them.
+    if (this.textures.exists("sky-afternoon")) {
+      for (const key of this.textures.getTextureKeys()) if (key.startsWith("char-you-") || key.startsWith("area-lane")) this.textures.remove(key);
+    }
+    for (const t of allTextures()) if (!this.textures.exists(t.key)) this.load.svg(t.key, svgUri(t.svg));
+  }
+
+  /** Redraw Lantern Lane after your home grows, while the game is running. */
+  refreshHome(): Promise<void> {
+    return new Promise((resolve) => {
+      const specs = laneTextures();
+      for (const t of specs) this.load.svg(`${t.key}~new`, svgUri(t.svg));
+      this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+        for (const t of specs) {
+          // Point the lane at the new picture first, then let the old one go.
+          for (const i of this.areaImages.values()) if (i.texture.key === t.key) i.setTexture(`${t.key}~new`);
+          this.textures.remove(t.key);
+          this.textures.renameTexture(`${t.key}~new`, t.key);
+        }
+        resolve();
+      });
+      this.load.start();
+    });
   }
 
   create() {

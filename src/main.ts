@@ -17,7 +17,10 @@ import { createDialogueBox } from "./ui/dialogue";
 import { createHud } from "./ui/hud";
 import { createMeterView } from "./ui/meter";
 import { factCard, runBreathScene, runChainScene, runCheckInScene, runFitScene, runMendScene, runSaveScene, runSayItScene } from "./ui/scenes";
-import { CHAPTER_NAMES, clearSave, readSave, writeSave, type SaveChapter, type SaveGame } from "./save";
+import { CHAPTER_NAMES, clearSave, readLooks, readSave, writeLooks, writeSave, type Looks, type SaveChapter, type SaveGame } from "./save";
+import { DEFAULT_CHARACTER, DEFAULT_HOME, growRoom, remainingAdditions } from "./logic/appearance";
+import { applyCharacter, runCharacterScreen, runGrowScene, runHomeScreen } from "./ui/wardrobe";
+import { setPlayerHome } from "./game/art";
 import { PlaytestLog } from "./playtest";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -32,6 +35,38 @@ const hud = createHud($("#hud"), sound, touch);
 const meter = createMeterView($("#meter"), reducedMotion);
 const panel = $("#panel");
 const titleCard = $("#title");
+
+// How you look and your home. The first new game asks; after that it's on the title screen.
+const savedLooks = readLooks();
+let looks: Looks = savedLooks ?? { character: DEFAULT_CHARACTER, home: DEFAULT_HOME };
+let chosenLooks = savedLooks !== null;
+function useLooks(next: Looks) {
+  looks = next;
+  applyCharacter(looks.character);
+  setPlayerHome(looks.home);
+  writeLooks(looks);
+}
+applyCharacter(looks.character);
+setPlayerHome(looks.home);
+
+async function chooseCharacter() {
+  const character = await runCharacterScreen(panel, looks.character, () => sound.play("ui"));
+  useLooks({ ...looks, character });
+}
+
+async function chooseHome() {
+  const home = await runHomeScreen(panel, looks.home, () => sound.play("ui"));
+  useLooks({ ...looks, home });
+}
+
+/** At a save point the home gets room for one more thing, whatever happened in the chapter. */
+async function growHome() {
+  const roomier = growRoom(looks.home);
+  if (roomier.slots === looks.home.slots || remainingAdditions(roomier).length === 0) return;
+  const home = await runGrowScene(panel, roomier, () => sound.play("light"));
+  useLooks({ ...looks, home });
+  await world?.refreshHome();
+}
 
 const storyJson = fetch("festival.json").then((r) => {
   if (!r.ok) throw new Error(`Could not load the story (${r.status}).`);
@@ -196,6 +231,7 @@ async function play(chosen: Variant, from?: string, resume?: SaveGame) {
       const next = Number(engine.getVar("next_chapter")) as SaveChapter;
       engine.choose(0);
       const saved = writeSave({ chapter: next, variant, story: engine.saveState(), game: state });
+      await growHome();
       log.record("save", { chapter: next, saved });
       const choice = await runSaveScene(panel, FINISHED[next], CHAPTER_ORDINAL[next], saved);
       if (choice === "break") {
@@ -329,18 +365,24 @@ function showTitle() {
   titleCard.hidden = false;
 }
 
-function begin(v: Variant, from?: string, resume?: SaveGame) {
+async function begin(v: Variant, from?: string, resume?: SaveGame) {
   sound.unlock();
   sound.play("ui");
   titleCard.hidden = true;
+  // A first new game starts with choosing how you look and your home.
+  if (!chosenLooks && !from && !resume) {
+    await chooseCharacter();
+    await chooseHome();
+    chosenLooks = true;
+  }
   play(v, from, resume).catch((err) => {
     console.error(err);
     void dialogue.say(String(err instanceof Error ? err.message : err), null);
   });
 }
 
-$("#start-main").addEventListener("click", () => begin("main"));
-$("#start-promise").addEventListener("click", () => begin("promise"));
+$("#start-main").addEventListener("click", () => void begin("main"));
+$("#start-promise").addEventListener("click", () => void begin("promise"));
 $("#start-ch2").addEventListener("click", () => begin("main", "start_day_two"));
 $("#start-ch3").addEventListener("click", () => begin("main", "start_storm"));
 $("#start-ch4").addEventListener("click", () => begin("main", "start_mill"));
@@ -351,6 +393,16 @@ $("#continue").addEventListener("click", () => {
   if (save) begin(save.variant, undefined, save);
   else showTitle();
 });
+for (const [id, choose] of [["#edit-look", chooseCharacter], ["#edit-home", chooseHome]] as const) {
+  $(id).addEventListener("click", async () => {
+    sound.unlock();
+    sound.play("ui");
+    titleCard.hidden = true;
+    await choose();
+    chosenLooks = true;
+    showTitle();
+  });
+}
 $("#start-over").addEventListener("click", () => {
   clearSave();
   showTitle();
@@ -361,7 +413,7 @@ window.addEventListener("keydown", () => sound.unlock(), { once: true });
 
 // ?debug exposes the world for automated playtesting (walk the player, read state).
 if (new URLSearchParams(location.search).has("debug")) {
-  Object.assign(window, { lantern: { world: () => world, state: () => state } });
+  Object.assign(window, { lantern: { world: () => world, state: () => state, growHome } });
 }
 
 const requested = new URLSearchParams(location.search).get("variant");

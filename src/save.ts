@@ -4,6 +4,7 @@
 
 import type { GameState } from "./logic/state";
 import type { Variant } from "./logic/facts";
+import { normalizeCharacter, normalizeHome, type CharacterChoice, type HomeChoice } from "./logic/appearance";
 
 const KEY = "lantern-night:save";
 export type SaveChapter = 2 | 3 | 4 | 5 | 6;
@@ -72,3 +73,36 @@ export const CHAPTER_NAMES: Record<SaveGame["chapter"], string> = {
   5: "chapter five: The first snow",
   6: "chapter six: The tide",
 };
+
+// --- Your look and your home --------------------------------------------------------
+// Kept apart from the chapter save: starting over keeps how you look and your home.
+
+const LOOKS_KEY = "lantern-night:looks";
+
+export interface Looks {
+  character: CharacterChoice;
+  home: HomeChoice;
+}
+
+export function writeLooks(looks: Looks, store: Storage | null = storage()): boolean {
+  if (!store) return false;
+  try {
+    store.setItem(LOOKS_KEY, JSON.stringify(looks));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The saved look and home, checked; null if the player hasn't chosen yet. */
+export function readLooks(store: Storage | null = storage()): Looks | null {
+  if (!store) return null;
+  try {
+    const raw = store.getItem(LOOKS_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as Partial<Looks>;
+    return { character: normalizeCharacter(data.character), home: normalizeHome(data.home) };
+  } catch {
+    return null;
+  }
+}

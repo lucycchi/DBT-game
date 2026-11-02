@@ -4,7 +4,7 @@ Everyone in the village has their own worries. Nobody exists to teach the player
 
 ## How they look
 
-Round, plush animals (`src/ui/plush.ts`): You are a red panda, Mara a deer, Tobin an otter,
+Round, plush animals (`src/ui/plush.ts`): You choose your own look (see below), Mara a deer, Tobin an otter,
 Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. From
 chapter four: Iris (Ash's mother) a greyer bear in a plum coat, pearls and a small hat; Fen
 (Tobin's dad) an older otter in a yellow sou'wester and oilskin; Hesketh a white-grey hare with
@@ -13,6 +13,13 @@ navy nurse's cape and white cap. Each
 has their own face (eyes, brows, mouth, head shape) that fits who they are, and keeps their
 outfit colors and props (Mara's clipboard and scarf, Tobin's cap and apron, Wren's baker's
 hat, Nell's shawl, cane and flower, Ash's glasses).
+
+**You.** Picked on the first new game and changeable from the title screen (`src/ui/wardrobe.ts`):
+girl or boy (girl has short lashes and rounder cheeks), and a red panda, fox, cat, bunny, raccoon
+or koala, in three fur colors each. Outfits (tunic and satchel, dress, overalls, striped sweater,
+hoodie) come in six colors; add a hat (bow, flower crown, beanie, sun hat) and one extra (glasses,
+scarf, bow tie). Every outfit works with either body; each body only starts in its own outfit.
+No villager is a fox, cat, bunny, raccoon or koala, so you stand out.
 
 **Feelings.** Eleven, each changing eyes, brows, mouth and cheeks, adding a small sign by the
 head, and moving the body: calm (breathing), happy (sparkles, a bounce), laughing (a wobble),

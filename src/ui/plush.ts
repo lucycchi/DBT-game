@@ -10,11 +10,12 @@ const INK = "#2a1c16";
 
 // --- Animals --------------------------------------------------------------------
 
-type Ears = "pointy" | "leaf" | "tiny" | "round" | "bigRound" | "floppy" | "long";
-type Tail = "ringed" | "puff" | "flat" | "stub" | "thin";
-type Pattern = "none" | "redpanda" | "badger" | "wool";
+type Ears = "pointy" | "leaf" | "tiny" | "round" | "bigRound" | "floppy" | "long" | "fluffy";
+type Tail = "ringed" | "puff" | "flat" | "stub" | "thin" | "brush" | "curl";
+type Pattern = "none" | "redpanda" | "badger" | "wool" | "cheeks" | "mask";
 
-interface Species {
+export interface Species {
+  nosePlus?: number;
   ears: Ears;
   tail: Tail;
   pattern: Pattern;
@@ -30,7 +31,12 @@ interface Species {
   muzzle?: { rx: number; ry: number; dy?: number };
 }
 
-const SPECIES: Record<string, Species> = {
+export const SPECIES: Record<string, Species> = {
+  fox: { ears: "pointy", tail: "brush", pattern: "cheeks", fur: "#e07a3c", fur2: "#fbf1e2", feet: "#4a2e24", inner: "#4a2e24", nose: "#2a1c16" },
+  cat: { ears: "pointy", tail: "curl", pattern: "none", fur: "#9aa0ab", fur2: "#f1ede8", feet: "#9aa0ab", inner: "#f2b5b8", nose: "#e58a92", muzzle: { rx: 0.34, ry: 0.24 } },
+  bunny: { ears: "long", tail: "puff", pattern: "none", fur: "#f4ede4", fur2: "#ffffff", feet: "#e9ddd0", inner: "#f4b9c0", nose: "#e58a92" },
+  raccoon: { ears: "pointy", tail: "ringed", pattern: "mask", fur: "#8f8a86", fur2: "#f3efe9", feet: "#3a3634", inner: "#3a3634", nose: "#1e1a18", ring: "#4a4542" },
+  koala: { ears: "fluffy", tail: "stub", pattern: "none", fur: "#a9adb5", fur2: "#e8e8ec", feet: "#7d8189", inner: "#f3f1ee", nose: "#3a3638", nosePlus: 1.9, muzzle: { rx: 0.3, ry: 0.2, dy: 0.4 } },
   redpanda: { ears: "pointy", tail: "ringed", pattern: "redpanda", fur: "#c8582e", fur2: "#f7ecdc", feet: "#3a2420", inner: "#f7ecdc", nose: "#2a1c16", ring: "#7e2f17" },
   deer: { ears: "leaf", tail: "puff", pattern: "none", fur: "#b9875a", fur2: "#f5e6cf", feet: "#5a3d2a", inner: "#efc6ad", nose: "#3a2a22" },
   otter: { ears: "tiny", tail: "flat", pattern: "none", fur: "#8a5a3b", fur2: "#ecd6b2", feet: "#5e3b26", inner: "#5e3b26", nose: "#2a1c16", muzzle: { rx: 0.56, ry: 0.32 } },
@@ -50,9 +56,12 @@ const SPECIES: Record<string, Species> = {
 
 type Extra =
   | "satchel" | "scarf" | "clipboard" | "apron" | "cap" | "toque" | "bow" | "shawl" | "cane" | "flower" | "glasses"
-  | "lapels" | "pearls" | "pillbox" | "oilskin" | "souwester" | "cardigan" | "cape" | "nursecap";
+  | "lapels" | "pearls" | "pillbox" | "oilskin" | "souwester" | "cardigan" | "cape" | "nursecap"
+  | "dress" | "overalls" | "sweater" | "hoodie" | "beanie" | "sunhat" | "flowercrown" | "bowtie";
 
-interface Look {
+export interface Look {
+  /** Overrides the species' fur colors (customization). */
+  furs?: { fur: string; fur2: string; ring?: string; feet?: string };
   species: string;
   outfit: string;
   accent: string;
@@ -88,7 +97,7 @@ type Mouth = "w" | "smile" | "polite" | "grin" | "flat" | "broad" | "toothy" | "
 type Mark = "sparkle" | "tear" | "sweat" | "puff" | "exclaim" | "zzz" | "blushLines";
 export type Motion = "breathe" | "bounce" | "laugh" | "sink" | "stomp" | "hop" | "shiver" | "sway" | "shrink" | "droop";
 
-interface Face {
+export interface Face {
   eye?: Eye;
   brow?: Brow;
   mouth?: Mouth;
@@ -158,8 +167,7 @@ export const FEET = { x: 0.5, y: -VIEWBOX.y / VIEWBOX.h };
 
 export type Frame = "closed" | "open" | "blink";
 
-function faceFor(id: CharacterId, expr: Expression, frame: Frame): Face {
-  const own = FACES[id];
+function faceFor(own: Face, expr: Expression, frame: Frame): Face {
   const F = FEELINGS[expr];
   const face: Face =
     expr === "neutral"
@@ -200,6 +208,13 @@ function tailSVG(sp: Species, bw: number, top: number, bot: number, k: number) {
       return `<ellipse cx="${f(bx + 9 * k)}" cy="${f(by + 8 * k)}" rx="${f(14 * k)}" ry="${f(4.5 * k)}" transform="rotate(28 ${f(bx + 9 * k)} ${f(by + 8 * k)})" fill="${sp.fur}"/>`;
     case "thin":
       return `<path d="M${f(bx)} ${f(by)} Q${f(bx + 24 * k)} ${f(by + 8 * k)} ${f(bx + 22 * k)} ${f(by - 18 * k)}" fill="none" stroke="${sp.fur}" stroke-width="${f(2.6 * k)}" stroke-linecap="round"/>`;
+    case "brush": {
+      // A big bushy fox tail swept up behind, with a white tip.
+      const d = `M${f(bx - 2 * k)} ${f(by + 6 * k)} Q${f(bx + 30 * k)} ${f(by + 8 * k)} ${f(bx + 26 * k)} ${f(by - 26 * k)} Q${f(bx + 14 * k)} ${f(by - 14 * k)} ${f(bx - 2 * k)} ${f(by - 4 * k)} Z`;
+      return `<path d="${d}" fill="${sp.fur}"/><ellipse cx="${f(bx + 25 * k)}" cy="${f(by - 22 * k)}" rx="${f(6 * k)}" ry="${f(7.5 * k)}" transform="rotate(20 ${f(bx + 25 * k)} ${f(by - 22 * k)})" fill="${sp.fur2}"/>`;
+    }
+    case "curl":
+      return `<path d="M${f(bx)} ${f(by + 4 * k)} Q${f(bx + 22 * k)} ${f(by + 6 * k)} ${f(bx + 20 * k)} ${f(by - 16 * k)} Q${f(bx + 19 * k)} ${f(by - 26 * k)} ${f(bx + 12 * k)} ${f(by - 24 * k)}" fill="none" stroke="${sp.fur}" stroke-width="${f(5 * k)}" stroke-linecap="round"/>`;
     default:
       return `<circle cx="${f(bx + 2 * k)}" cy="${f(by + 3 * k)}" r="${f(4 * k)}" fill="${sp.fur}"/>`;
   }
@@ -238,6 +253,14 @@ function earsSVG(sp: Species, R: number, hy: number) {
         s += `<path d="${path}" fill="none" stroke="${sp.inner}" stroke-width="${f(R * 0.16)}" stroke-linecap="round" stroke-dasharray="${f(R * 1.2)} ${f(R * 4)}" stroke-dashoffset="${f(-R * 0.25)}"/>`;
         break;
       }
+      case "fluffy":
+        // Big round koala ears with a pale fluffy middle.
+        s += `<circle cx="${f(d * R * 0.95)}" cy="${f(hy - R * 0.5)}" r="${f(R * 0.5)}" fill="${sp.fur}"/>`;
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          s += `<circle cx="${f(d * R * 1.0 + Math.cos(a) * R * 0.14)}" cy="${f(hy - R * 0.5 + Math.sin(a) * R * 0.14)}" r="${f(R * 0.15)}" fill="${sp.inner}"/>`;
+        }
+        break;
       case "tiny":
         s += `<circle cx="${f(d * R * 0.8)}" cy="${f(hy - R * 0.6)}" r="${f(R * 0.21)}" fill="${sp.fur}"/><circle cx="${f(d * R * 0.8)}" cy="${f(hy - R * 0.6)}" r="${f(R * 0.1)}" fill="${sp.inner}"/>`;
         break;
@@ -283,6 +306,15 @@ function eyeSVG(kind: Eye, d: number, x: number, y: number, R: number, lashes?: 
     default:
       return `<circle cx="${f(x)}" cy="${f(y)}" r="${f(R * 0.1)}" fill="${INK}"/>` + glint(R * 0.03, -R * 0.045, R * 0.035);
   }
+}
+
+/** Two lashes at the outer top of any eye shape (almond eyes draw their own). */
+function lashSVG(kind: Eye, d: number, x: number, y: number, R: number) {
+  const closed = kind === "happy" || kind === "sleepy" || kind === "line";
+  // Where the eye's outer top edge is, and which way the lashes sweep.
+  const [ox, oy] = closed ? [x + d * R * 0.11, y + R * 0.01] : [x + d * R * 0.07, y - R * 0.1];
+  const st = `stroke="${INK}" stroke-width="${f(R * 0.045)}" stroke-linecap="round"`;
+  return `<path d="M${f(ox)} ${f(oy)} l${f(d * R * 0.05)} ${f(-R * 0.025)} M${f(ox - d * R * 0.03)} ${f(oy - R * 0.03)} l${f(d * R * 0.035)} ${f(-R * 0.04)}" ${st}/>`;
 }
 
 function browSVG(kind: Brow, d: number, x: number, y: number, R: number, bushy = false) {
@@ -381,9 +413,13 @@ export interface DrawOptions {
 
 /** SVG markup for a villager (no outer <svg>), feet at (0, 0), already scaled to their size. */
 export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOptions = {}): string {
-  const look = LOOKS[id];
-  const sp = SPECIES[look.species];
-  const face = faceFor(id, expr, opts.frame ?? "closed");
+  return lookMarkup(LOOKS[id], FACES[id], expr, opts);
+}
+
+/** The same drawing from a look and face directly, for a customized character. */
+export function lookMarkup(look: Look, own: Face, expr: Expression, opts: DrawOptions = {}): string {
+  const sp = { ...SPECIES[look.species], ...(look.furs ?? {}) };
+  const face = faceFor(own, expr, opts.frame ?? "closed");
   const R = S.headR;
   const hy = S.headY;
   const top = S.bodyTop;
@@ -412,6 +448,41 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
   if (has("satchel")) {
     s += `<path d="M${f(-bw * 0.34)} ${f(top + 1)} L${f(bw * 0.36)} ${f(bot - bh * 0.3)}" stroke="${look.accent}" stroke-width="${f(2.6 * Math.max(k, 0.8))}" stroke-linecap="round"/>`;
     s += `<rect x="${f(bw * 0.18)}" y="${f(bot - bh * 0.38)}" width="${f(bw * 0.36)}" height="${f(bh * 0.3)}" rx="${f(bw * 0.06)}" fill="${look.accent}"/>`;
+  }
+
+  const kk = Math.max(k, 0.8);
+  if (has("dress")) {
+    // A skirt that flares out below the waist, a scalloped hem and a round collar.
+    const wy = top + bh * 0.42;
+    s += `<path d="M${f(-bw * 0.4)} ${f(wy)} Q${f(-bw * 0.62)} ${f(bot - 2)} ${f(-bw * 0.66)} ${f(bot + 1)} Q0 ${f(bot + 6)} ${f(bw * 0.66)} ${f(bot + 1)} Q${f(bw * 0.62)} ${f(bot - 2)} ${f(bw * 0.4)} ${f(wy)} Z" fill="${look.outfit}"/>`;
+    for (let i = 0; i < 6; i++) s += `<circle cx="${f(-bw * 0.55 + (i * bw * 1.1) / 5)}" cy="${f(bot + 1.5)}" r="${f(1.8 * kk)}" fill="${look.accent}"/>`;
+    s += `<path d="M${f(-bw * 0.36)} ${f(wy)} Q0 ${f(wy + 3 * kk)} ${f(bw * 0.36)} ${f(wy)}" fill="none" stroke="${look.accent}" stroke-width="${f(1.6 * kk)}"/>`;
+    for (const d of [-1, 1]) s += `<ellipse cx="${f(d * bw * 0.14)}" cy="${f(top + 2)}" rx="${f(bw * 0.16)}" ry="${f(3.2 * kk)}" fill="#fffaf0"/>`;
+  }
+  if (has("overalls")) {
+    // A bib and trousers over the shirt, two straps and two buttons.
+    s += `<path d="M${f(-bw * 0.26)} ${f(top + bh * 0.3)} H${f(bw * 0.26)} V${f(top + bh * 0.5)} Q${f(bw * 0.5)} ${f(top + bh * 0.52)} ${f(bw * 0.5)} ${f(bot - bh * 0.1)} Q0 ${f(bot + 4)} ${f(-bw * 0.5)} ${f(bot - bh * 0.1)} Q${f(-bw * 0.5)} ${f(top + bh * 0.52)} ${f(-bw * 0.26)} ${f(top + bh * 0.5)} Z" fill="${look.accent}"/>`;
+    for (const d of [-1, 1]) {
+      s += `<path d="M${f(d * bw * 0.2)} ${f(top + bh * 0.32)} L${f(d * bw * 0.3)} ${f(top + 1)}" stroke="${look.accent}" stroke-width="${f(2.4 * kk)}" stroke-linecap="round"/>`;
+      s += `<circle cx="${f(d * bw * 0.18)}" cy="${f(top + bh * 0.36)}" r="${f(1.3 * kk)}" fill="#f6d36a"/>`;
+    }
+    s += `<rect x="${f(-bw * 0.1)}" y="${f(top + bh * 0.4)}" width="${f(bw * 0.2)}" height="${f(bh * 0.12)}" rx="1.5" fill="#000" opacity=".12"/>`;
+  }
+  if (has("sweater")) {
+    // Knitted stripes across the body, each as wide as the body at that height.
+    const cy = top + bh / 2;
+    const ry = bh / 2 + 2;
+    for (const t of [0.36, 0.6, 0.84]) {
+      const y = top + bh * t;
+      const hw = (bw / 2) * Math.sqrt(Math.max(0, 1 - ((y - cy) / ry) ** 2)) - 0.5;
+      s += `<rect x="${f(-hw)}" y="${f(y - 2.2 * kk)}" width="${f(hw * 2)}" height="${f(4.4 * kk)}" fill="${look.accent}"/>`;
+    }
+    s += `<path d="M${f(-bw * 0.3)} ${f(top + 1)} Q0 ${f(top + 5)} ${f(bw * 0.3)} ${f(top + 1)}" fill="none" stroke="${look.accent}" stroke-width="${f(2.6 * kk)}" stroke-linecap="round"/>`;
+  }
+  if (has("hoodie")) {
+    // A front pocket and drawstrings; the hood itself sits behind the head.
+    s += `<path d="M${f(-bw * 0.28)} ${f(bot - bh * 0.42)} H${f(bw * 0.28)} L${f(bw * 0.34)} ${f(bot - bh * 0.08)} H${f(-bw * 0.34)} Z" fill="#000" opacity=".1"/>`;
+    for (const d of [-1, 1]) s += `<path d="M${f(d * bw * 0.08)} ${f(top + 1)} v${f(bh * 0.3)}" stroke="#fffaf0" stroke-width="${f(1.2 * kk)}" stroke-linecap="round"/><circle cx="${f(d * bw * 0.08)}" cy="${f(top + 1 + bh * 0.3)}" r="${f(1.1 * kk)}" fill="#fffaf0"/>`;
   }
 
   if (has("lapels")) {
@@ -486,6 +557,7 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
   // Head
   const hw = R * 1.08 * (face.headW ?? 1);
   const hh = R * (face.headH ?? 1);
+  if (has("hoodie")) s += `<ellipse cx="0" cy="${f(hy + R * 0.55)}" rx="${f(R * 1.02)}" ry="${f(R * 0.62)}" fill="${look.accent}"/>`;
   s += earsSVG(sp, R, hy);
   if (sp.pattern === "wool") {
     for (let i = 0; i < 9; i++) {
@@ -500,14 +572,19 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
   }
   // Everything on the face moves toward where they're walking when turned.
   const faceStart = s.length;
-  if (sp.pattern === "redpanda" || sp.pattern === "badger") {
+  if (sp.pattern === "mask") {
+    // A raccoon's dark mask across the eyes, pale above it.
+    for (const d of [-1, 1]) s += `<ellipse cx="${f(d * R * 0.44)}" cy="${f(hy + R * 0.12)}" rx="${f(R * 0.32)}" ry="${f(R * 0.22)}" transform="rotate(${d * 12} ${f(d * R * 0.44)} ${f(hy + R * 0.12)})" fill="${sp.ring}"/>`;
+    for (const d of [-1, 1]) s += `<ellipse cx="${f(d * R * 0.4)}" cy="${f(hy - R * 0.22)}" rx="${f(R * 0.22)}" ry="${f(R * 0.09)}" fill="${sp.fur2}"/>`;
+  }
+  if (sp.pattern === "redpanda" || sp.pattern === "badger" || sp.pattern === "cheeks") {
     for (const d of [-1, 1]) s += `<ellipse cx="${f(d * R * 0.48)}" cy="${f(hy + R * 0.36)}" rx="${f(R * 0.42)}" ry="${f(R * 0.32)}" fill="${sp.fur2}"/>`;
   }
   if (sp.pattern === "redpanda") for (const d of [-1, 1]) s += `<circle cx="${f(d * R * 0.38)}" cy="${f(hy - R * 0.34)}" r="${f(R * 0.11)}" fill="${sp.fur2}"/>`;
   if (sp.pattern === "badger") s += `<ellipse cx="0" cy="${f(hy - R * 0.3)}" rx="${f(R * 0.2)}" ry="${f(R * 0.72)}" fill="${sp.fur2}"/>`;
   const m = { rx: 0.4, ry: 0.28, dy: 0.42, ...(sp.muzzle ?? {}) };
   if (sp.pattern !== "wool") s += `<ellipse cx="0" cy="${f(hy + R * m.dy)}" rx="${f(R * m.rx)}" ry="${f(R * m.ry)}" fill="${sp.fur2}"/>`;
-  s += `<ellipse cx="0" cy="${f(hy + R * (m.dy - 0.14))}" rx="${f(R * 0.13)}" ry="${f(R * 0.085)}" fill="${sp.nose}"/>`;
+  s += `<ellipse cx="0" cy="${f(hy + R * (m.dy - 0.14))}" rx="${f(R * 0.13 * (sp.nosePlus ?? 1))}" ry="${f(R * 0.085 * (sp.nosePlus ?? 1))}" fill="${sp.nose}"/>`;
   const my = hy + R * (m.dy + 0.02);
   s += mouthSVG(face.mouth ?? "w", R, my);
   if (sp.beard) s += `<path d="M${f(-R * 0.14)} ${f(hy + R * 0.88)} L${f(R * 0.14)} ${f(hy + R * 0.88)} L0 ${f(hy + R * 1.25)} Z" fill="${sp.fur2}"/>`;
@@ -518,6 +595,7 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
   const eye: Eye = face.blink ? "line" : face.eye ?? "round";
   for (const d of [-1, 1]) {
     s += eyeSVG(eye, d, d * ex, ey, R, face.lashes);
+    if (face.lashes && eye !== "almond") s += lashSVG(eye, d, d * ex, ey, R);
     s += `<ellipse cx="${f(d * R * 0.6)}" cy="${f(hy + R * 0.3)}" rx="${f(R * 0.16)}" ry="${f(R * 0.09)}" fill="#f07f86" opacity="${face.blush ?? S.blush}"/>`;
     if (face.freckles) for (const [fx, fy] of [[0.52, 0.2], [0.64, 0.26], [0.56, 0.32]]) s += `<circle cx="${f(d * R * fx)}" cy="${f(hy + R * fy)}" r="${f(R * 0.03)}" fill="#7a4a32" opacity=".6"/>`;
     if (face.lines) s += `<path d="M${f(d * (ex + R * 0.2))} ${f(ey + R * 0.02)} l${f(d * R * 0.08)} ${f(R * 0.05)} M${f(d * (ex + R * 0.2))} ${f(ey - R * 0.05)} l${f(d * R * 0.08)} ${f(-R * 0.03)}" stroke="#7a5a4a" stroke-width="${f(R * 0.035)}" stroke-linecap="round" opacity=".6"/>`;
@@ -565,6 +643,51 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
     s += `<path d="M${f(-R * 0.42)} ${f(cy + R * 0.14)} L${f(-R * 0.32)} ${f(cy - R * 0.2)} L${f(R * 0.32)} ${f(cy - R * 0.2)} L${f(R * 0.42)} ${f(cy + R * 0.14)} Q0 ${f(cy + R * 0.06)} ${f(-R * 0.42)} ${f(cy + R * 0.14)} Z" fill="#fbfcfe" stroke="#c9d3e0" stroke-width="${f(R * 0.025)}"/>`;
     s += `<path d="M${f(-R * 0.36)} ${f(cy - R * 0.04)} L${f(R * 0.36)} ${f(cy - R * 0.04)}" stroke="${look.accent}" stroke-width="${f(R * 0.06)}"/>`;
   }
+  if (has("beanie")) {
+    // A knitted hat: a dome, a folded band, and a pompom.
+    s += `<path d="M${f(-R * 0.98)} ${f(hy - R * 0.42)} Q${f(-R * 0.96)} ${f(hy - R * 1.22)} 0 ${f(hy - R * 1.22)} Q${f(R * 0.96)} ${f(hy - R * 1.22)} ${f(R * 0.98)} ${f(hy - R * 0.42)} Z" fill="${look.hat ?? look.accent}"/>`;
+    s += `<rect x="${f(-R * 1.02)}" y="${f(hy - R * 0.62)}" width="${f(R * 2.04)}" height="${f(R * 0.3)}" rx="${f(R * 0.14)}" fill="${look.hat ?? look.accent}"/>`;
+    for (let i = 0; i < 7; i++) s += `<path d="M${f(-R * 0.84 + i * R * 0.28)} ${f(hy - R * 0.58)} v${f(R * 0.22)}" stroke="#000" stroke-opacity=".14" stroke-width="${f(R * 0.05)}"/>`;
+    s += `<circle cx="0" cy="${f(hy - R * 1.28)}" r="${f(R * 0.22)}" fill="#fffaf0"/>`;
+  }
+  if (has("sunhat")) {
+    // A wide straw hat with a ribbon.
+    s += `<ellipse cx="0" cy="${f(hy - R * 0.62)}" rx="${f(R * 1.5)}" ry="${f(R * 0.3)}" fill="#ecc97a"/>`;
+    s += `<path d="M${f(-R * 0.7)} ${f(hy - R * 0.66)} Q${f(-R * 0.66)} ${f(hy - R * 1.36)} 0 ${f(hy - R * 1.36)} Q${f(R * 0.66)} ${f(hy - R * 1.36)} ${f(R * 0.7)} ${f(hy - R * 0.66)} Z" fill="#f3d88f"/>`;
+    s += `<path d="M${f(-R * 0.69)} ${f(hy - R * 0.8)} Q0 ${f(hy - R * 0.9)} ${f(R * 0.69)} ${f(hy - R * 0.8)}" fill="none" stroke="${look.hat ?? look.accent}" stroke-width="${f(R * 0.16)}"/>`;
+  }
+  if (has("flowercrown")) {
+    // A ring of small five-petal flowers set close together over the crown, with leaves tucked between.
+    const cols: [string, string][] = [["#f4a08a", "#e9705a"], ["#fbe08a", "#f0b93a"], ["#f5b3cc", "#e07ea3"], ["#ffffff", "#e9dff0"], ["#c9b3ee", "#9f82d6"]];
+    const n = 8;
+    const at = (t: number) => {
+      const a = Math.PI * (1.17 + t * 0.66);
+      return [Math.cos(a) * hw * 0.84, hy - R * 0.08 + Math.sin(a) * hh * 0.86];
+    };
+    for (let i = 0; i < n - 1; i++) {
+      const [lx, ly] = at((i + 0.5) / (n - 1));
+      const rot = f(((i + 0.5) / (n - 1) - 0.5) * 120 + (i % 2 ? 35 : -35));
+      s += `<ellipse cx="${f(lx)}" cy="${f(ly)}" rx="${f(R * 0.13)}" ry="${f(R * 0.055)}" transform="rotate(${rot} ${f(lx)} ${f(ly)})" fill="#7fb86a"/>`;
+    }
+    for (let i = 0; i < n; i++) {
+      const [cx, cy] = at(i / (n - 1));
+      const [petal, deep] = cols[i % cols.length];
+      const pr = R * (i % 2 ? 0.075 : 0.085);
+      const spin = i * 17;
+      for (let j = 0; j < 5; j++) {
+        const a = ((j / 5) * 360 + spin) * (Math.PI / 180);
+        const px = cx + Math.cos(a) * pr;
+        const py = cy + Math.sin(a) * pr;
+        s += `<ellipse cx="${f(px)}" cy="${f(py)}" rx="${f(pr * 0.95)}" ry="${f(pr * 0.68)}" transform="rotate(${f((j / 5) * 360 + spin)} ${f(px)} ${f(py)})" fill="${petal}"/>`;
+        s += `<path d="M${f(cx + Math.cos(a) * pr * 0.45)} ${f(cy + Math.sin(a) * pr * 0.45)} L${f(cx + Math.cos(a) * pr * 1.25)} ${f(cy + Math.sin(a) * pr * 1.25)}" stroke="${deep}" stroke-width="${f(R * 0.018)}" stroke-linecap="round" opacity=".7"/>`;
+      }
+      s += `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(pr * 0.55)}" fill="#f6c445"/><circle cx="${f(cx - pr * 0.15)}" cy="${f(cy - pr * 0.18)}" r="${f(pr * 0.2)}" fill="#fff6c8"/>`;
+    }
+  }
+  if (has("bowtie")) {
+    const by = hy + hh + 1.5;
+    s += `<path d="M0 ${f(by)} L${f(-R * 0.3)} ${f(by - R * 0.15)} L${f(-R * 0.3)} ${f(by + R * 0.15)} Z M0 ${f(by)} L${f(R * 0.3)} ${f(by - R * 0.15)} L${f(R * 0.3)} ${f(by + R * 0.15)} Z" fill="${look.hat ?? look.accent}"/><circle cx="0" cy="${f(by)}" r="${f(R * 0.07)}" fill="${look.hat ?? look.accent}"/>`;
+  }
   if (has("bow")) {
     const bx = R * 0.62;
     const by = hy - R * 0.95;
@@ -603,4 +726,10 @@ export function portraitSVG(id: CharacterId, expr: Expression): string {
     .map((fr) => `<g class="fr fr-${fr}">${characterMarkup(id, expr, { frame: fr })}</g>`)
     .join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${f(-size / 2)} ${f(top)} ${f(size)} ${f(size)}" class="portrait" data-frame="closed" aria-hidden="true"><g class="mot m-${FEELINGS[expr].motion}">${frames}</g></svg>`;
+}
+
+/** Dress the player in what they chose (see src/ui/wardrobe.ts). Portraits and textures made after this use it. */
+export function setPlayerLook(look: Look, face: Face): void {
+  LOOKS.you = look;
+  FACES.you = face;
 }
