@@ -51,3 +51,5 @@ rock. Ash treats rest as allowed and is still glad when you come back.
 | Night, if you hid | Ash at the hollow; Mara and Tobin overheard | Ash checks on you; Mara and Tobin each think it was their fault. |
 | Finding out what happened | Tobin, the bakers, the kids, plus Nell (if you hid; behind the dark lane) or Ash (if you stayed) | Each conversation is a fact: Tobin fell too, the bakers didn't see, the kids watched the lantern, Mara was worried. Ash gives you a candle if you hid. |
 | Festival evening | Everyone | Reactions depend on what you did and how fully you did it. |
+| Chapter two, the morning after | The bakers, Mara and Tobin ask for help; Nell, Ash and the kids | Each errand wears you down. Everyone takes "no" well. Ash offers to cover your stall; telling Ash or Mara before resting is how resting works. |
+| Chapter three, the storm | Pip (scared), Mara, Tobin, Nell, Ash | Pip panics too; once you're calm you can breathe with her. Mara asks for help tying the lanterns down. |

@@ -33,8 +33,21 @@ VAR part_a = false        // opposite: go back    | repair: own it
 VAR part_b = false        // opposite: head up    | repair: make it right
 VAR part_c = false        // opposite: voice      | repair: let it go
 VAR completeness = ""     // "full" | "partial" | "minimal"
+// Chapter two: the morning after
+VAR task = ""             // errand in progress: "bread" | "bunting" | "sort"
+VAR tasks_done = 0
+VAR said_no = 0
+VAR rest_ok = false       // the check-in found the tiredness real and the guilt not matching
+VAR guilt_fits = false    // set by the check-in scene
+VAR told = false          // told someone before going to rest
+VAR rested = false
+VAR rest_kind = ""        // "full" | "partial"
+// Chapter three: the storm
+VAR breaths = 0           // set by the breathing scene: slow breaths taken
+VAR lost = false
 
 EXTERNAL outcome(a, b, c)
+EXTERNAL distress()       // the meter's current distress, read live from the TS layer
 
 -> start
 
@@ -697,8 +710,292 @@ ash: Fresh pot. Sit.
 
 === chain_review ===
 At home, you think back over the day, one moment at a time. #scene: chain
-+ [·] -> ending
++ [·] -> day_two
 
 === ending ===
 The lanterns burn on into the night. #event: end
 -> END
+
+// ---------------------------------------------------------------------------
+// Chapter two: the morning after. When pulling back is the right call.
+// (DBT: checking the facts on guilt; resting and saying no as effective action,
+// not avoidance. Player-facing text never names these.)
+
+=== start_day_two ===
+// Entry point for "jump to chapter two" on the title screen.
+~ completeness = "full"
+-> day_two
+
+=== day_two ===
+Chapter two: The morning after. #event: chapter 2
+You slept badly. Three hours, maybe. Your eyes feel full of sand.
+Outside, the whole village is already up. Tonight is the last night of the festival, and everyone has something that needs doing.
+-> day_two_hub
+
+=== day_two_hub ===
+- (hub)
+{ tasks_done >= 3 && not rested: -> collapse }
++ {task == "" && not bread_ask} [Ask the bakers if they need anything #talk: wren]
+    -> bread_ask -> hub
++ {task == "bread"} [Carry the bread trays to the fountain #go: fountain]
+    -> bread_done -> hub
++ {task == "" && not bunting_ask && not (rest_ok && not told)} [Ask Mara if she needs anything #talk: mara]
+    -> bunting_ask -> hub
++ {task == "bunting"} [Take down the bunting on Market Street #use: bunting]
+    -> bunting_done -> hub
++ {task == "" && not sort_ask} [Ask Tobin if he needs anything #talk: tobin]
+    -> sort_ask -> hub
++ {task == "sort"} [Sort the broken lanterns in the workshop #use: lantern_table]
+    -> sort_done -> hub
++ {rest_ok && not told} [Tell Ash you're taking the afternoon #talk: ash]
+    -> tell_ash -> hub
++ {rest_ok && not told} [Tell Mara you're taking the afternoon #talk: mara]
+    -> tell_mara -> hub
++ {not nell_day2} [Talk to Nell #talk: nell]
+    -> nell_day2 -> hub
++ {not ash_day2 && not (rest_ok && not told)} [Talk to Ash #talk: ash]
+    -> ash_day2 -> hub
++ {not kids_day2} [Talk to the kids #talk: pip]
+    -> kids_day2 -> hub
++ {not check_in} [Sit on the fountain wall and check in with yourself #go: bench] -> check_in
++ [Go up to the hollow #go: hollow] -> hollow_choice
+
+=== bread_ask ===
+oda: Morning! Could you carry the bread trays to the square? Wren's back is acting up.
+wren/worried: My back is fine. My back has never been better.
++ ["Sure, I'll take them."]
+    ~ task = "bread"
+    oda/smile: You're a treasure.
++ ["Not today, sorry. I'm running on empty."]
+    ~ said_no++
+    oda/warm: Then don't run. Pip and Juno can carry the small ones.
+- ->->
+
+=== bunting_ask ===
+mara: Could you take the bunting down on Market Street? Tobin says the wind's picking up tonight.
++ ["On it."]
+    ~ task = "bunting"
+    mara/smile: Thank you. Really.
++ ["I can't today. I'm wiped out."]
+    ~ said_no++
+    mara/warm: Of course. Tobin can do it. He likes ladders. He says he doesn't, but he does.
+- ->->
+
+=== sort_ask ===
+tobin: Help me sort the broken lanterns? Two piles: fixable and not.
++ ["Okay."]
+    ~ task = "sort"
+    tobin/smile: Great. They're on the bench.
++ ["Can it wait? I'm exhausted."]
+    ~ said_no++
+    tobin/laugh: It's waited a year. It can wait a day.
+- ->->
+
+=== bread_done ===
+~ task = ""
+~ tasks_done++
+You set the trays down by the fountain. They were heavier than they looked. #event: tire
+-> body_notice ->
+->->
+
+=== bunting_done ===
+~ task = ""
+~ tasks_done++
+You climb the ladder and unhook the bunting, one flag at a time. Your arms ache by the last one. #event: tire
+-> body_notice ->
+->->
+
+=== sort_done ===
+~ task = ""
+~ tasks_done++
+You sort lanterns into two piles until the colors start to blur together. #event: tire
+-> body_notice ->
+->->
+
+=== body_notice ===
+{ tasks_done:
+- 1: You yawn so hard your jaw clicks. Your arms feel heavy.
+- 2: Your hands are shaking a little. A headache is starting behind your eyes.
+- else: Everything is too bright and too loud.
+}
+->->
+
+=== nell_day2 ===
+nell/smile: You look like a candle burned at both ends.
++ ["I'm fine."]
+    nell: Mm. That's what candles say.
++ ["I'm exhausted."]
+    nell/warm: In my day we called it a lie-in. I recommend it highly. I've had about sixty of them.
+- ->->
+
+=== ash_day2 ===
+ash/smile: You look terrible. Lovingly.
+ash: If you need someone to take your stall shift this afternoon, I'm free.
++ ["I might take you up on that."]
+    ash/warm: Offer stands.
++ ["I'll be fine."]
+    ash: Offer still stands.
+- ->->
+
+=== kids_day2 ===
+pip/laugh: Will you play lantern tag with us?
+{ tasks_done >= 2:
+    You hear yourself say "Not NOW" much louder than you meant to.
+    pip/sad: ...Okay.
+    juno: She was only asking.
+    ->->
+}
++ ["Maybe later. I'm really tired."]
+    juno: Later counts. I'm writing it down.
++ ["One round."]
+    You play one round. You're it the whole time. #event: tire
+- ->->
+
+=== check_in ===
+You sit on the fountain wall and check in. Not with the list. With yourself. #scene: checkin
++ [·] -> checked
+
+= checked
+{ guilt_fits:
+    Okay. Then do what's needed, and keep an eye on how you're doing.
+    -> day_two_hub
+}
+~ rest_ok = true
+The tiredness matches what's happening: three hours of sleep, and you've been going since dawn. The guilt about stopping doesn't.
+Resting isn't the same as hiding. Hiding gets you away from a feeling. Resting looks after the person who's having it.
+The difference is how you go: tell someone, say when you'll be back, and then really rest.
+-> day_two_hub
+
+=== tell_ash ===
++ ["I'm wiped out. Could you take my stall this afternoon? I'll be back for the last night."]
+    ~ told = true
+    ash/warm: Finally. Go. I've got it.
+- ->->
+
+=== tell_mara ===
++ ["I need to rest this afternoon. I'll be back for the last night."]
+    ~ told = true
+    mara/smile: Of course. Thank you for telling me. I'd have worried.
+- ->->
+
+=== hollow_choice ===
+{ told:
+    -> rest
+}
+The hollow is right there. Nobody knows you're up here.
++ [Rest here anyway] -> rest
++ [Go back down first] -> day_two_hub
+
+=== collapse ===
+You sit down on the edge of the fountain and can't make yourself stand back up. #event: tire
+ash/worried: Hey. Hey. When did you last sleep?
+ash: Go. Up the hill, home, anywhere. I've got your stall.
+~ told = true
++ [Let Ash take over] -> rest
+
+=== rest ===
+~ rested = true
+{ tasks_done >= 3:
+    ~ rest_kind = "partial"
+- else:
+    ~ rest_kind = "full"
+}
+You don't let the shell come this time. You just sit, back against the cool stone, and close your eyes. #event: rest {rest_kind}
+{ told:
+    Down below, someone knows where you are. Nothing needs you for a few hours.
+}
+The afternoon goes by without you. It turns out that's allowed.
+You wake as the sun is going down. #event: sunset
+{ rest_kind == "full":
+    Your head is clear. Your hands are steady.
+- else:
+    You feel better. Not all the way. Your body is still catching up.
+}
+{ not told:
+    mara/worried: There you are! I looked everywhere.
+    mara/smile: You look better, though. Good.
+}
+-> storm
+
+// ---------------------------------------------------------------------------
+// Chapter three: the storm. When a feeling is too big to think through,
+// bring the body down first. (DBT: TIPP: cold water and paced breathing.)
+
+=== start_storm ===
+// Entry point for "jump to chapter three" on the title screen.
+~ completeness = "full"
+~ rested = true
+~ rest_kind = "full"
+-> storm
+
+=== storm ===
+Chapter three: The storm. #event: chapter 3
+The last night of the festival. The lanterns are lit and the square is full.
+Then the wind changes. #event: storm on
+A gust tears across the square. The lantern string bucks and snaps. Someone's hat cartwheels past the fountain.
+pip/worried: The lanterns!
+Your heart slams. Your breath goes short and high. Everything is too loud at once. #event: wave
+-> storm_hub
+
+=== storm_hub ===
+- (hub)
+{ distress() < 50: -> clear_head }
+{ storm_hub.hub > 1:
+    Your thoughts are still racing too fast to make a plan.
+- else:
+    You can't think. There's no plan in your head, just noise. First, your body has to come down.
+}
++ {not cold_water} [Splash cold water from the fountain on your face #use: fountain_water]
+    -> cold_water -> hub
++ [Slow your breathing]
+    -> breathe -> hub
++ {not grab} [Grab at the lanterns now]
+    -> grab -> hub
+
+=== cold_water ===
+You plunge your hands into the fountain and press the cold water to your face. You hold your breath for a few seconds, face wet. #event: calm cold
+Your heartbeat drops a notch. Then another.
+->->
+
+=== breathe ===
+Breathe in through your nose, and out slower than in. #scene: breathe
++ [·]
+- { breaths:
+- 0: It's hard to slow down. Your breath keeps catching.
+- 1: One slow breath. A little room opens up.
+- else: {breaths} slow breaths. Your shoulders come down from around your ears.
+}
+->->
+
+=== grab ===
+~ lost = true
+You lunge for the nearest lantern. Your hands are shaking too hard. It slips, and the wind takes it up over the rooftops. #event: lose_lantern
+It's gone. The others are still there.
+->->
+
+=== clear_head ===
+The storm is just as loud. But you can think again. #event: clear
+Pip is crouched behind the fountain, crying. The lantern string whips back and forth.
++ ["Pip. Breathe with me. In... and slowly out."]
+    pip/sad: I can't.
+    "In," you say, and breathe in. "And out, slow." You do it again. Then she does it with you.
+    pip/worried: Okay. Okay. I'm okay.
++ [Run straight to the lanterns]
+    You leave Pip with Juno and run for the string.
+-
+mara/worried: Help me tie them down!
+Tie each lantern to the string before the wind takes it. #scene: secure
++ [·] -> storm_end
+
+=== storm_end ===
+The wind drops as fast as it came. The rain stops. #event: storm off #event: settle full
+{ lost:
+    One lantern is somewhere over the hill. The rest still glow.
+- else:
+    Every lantern still glows.
+}
+tobin/laugh: Best festival in years. Nobody will ever forget that wind.
+nell/smile: Sixty-two festivals. That was the best storm.
+ash/warm: You looked like you were going to bolt for a second. Then you didn't.
+You stand in the square with everyone, soaked through, under the lanterns. #event: face you:smile
+-> ending

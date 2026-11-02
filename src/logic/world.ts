@@ -35,6 +35,13 @@ export interface WorldState {
   pull: boolean;
   /** Carrying Ash's candle jar: dark lanes can be walked. */
   hasLight: boolean;
+  /** Chapter: 1 the fall, 2 the morning after, 3 the storm. */
+  level: 1 | 2 | 3;
+  weather: "clear" | "storm";
+  /** In the grip of the storm's panic wave, before the body comes down. */
+  panic: boolean;
+  /** Lanterns the wind took. */
+  lanternsLost: number;
   ended: boolean;
 }
 
@@ -56,6 +63,10 @@ export function initialWorld(): WorldState {
     factsFound: [],
     pull: false,
     hasLight: false,
+    level: 1,
+    weather: "clear",
+    panic: false,
+    lanternsLost: 0,
     ended: false,
   };
 }
@@ -95,6 +106,13 @@ export const WORLD_EVENTS = new Set([
   "invitation",
   "mend",
   "end",
+  "chapter",
+  "sunset",
+  "rest",
+  "storm",
+  "wave",
+  "clear",
+  "lose_lantern",
 ]);
 
 export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
@@ -161,6 +179,37 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
       return { ...w, invitation: ev.arg as WorldState["invitation"] };
     case "mend":
       return { ...w, heirloom: "mended" };
+    case "chapter": {
+      const level = Number(ev.arg);
+      if (level !== 2 && level !== 3) throw new Error(`Unknown chapter: ${ev.arg}`);
+      // Each chapter starts from a festival that went ahead, whatever happened before.
+      return {
+        ...w,
+        level,
+        lens: "none",
+        pull: false,
+        form: "person",
+        faceHot: false,
+        posture: "neutral",
+        lanterns: "hung",
+        lanternsHung: w.lanternsHung || 12,
+        location: level === 2 ? "lane" : "square",
+        time: level === 2 ? "morning" : "night",
+        faces: {},
+      };
+    }
+    case "sunset":
+      return { ...w, time: "sunset" };
+    case "rest":
+      return { ...w, location: "cave", form: "person", faceHot: false, posture: "neutral" };
+    case "storm":
+      return { ...w, weather: ev.arg === "on" ? "storm" : "clear", panic: ev.arg === "on" ? w.panic : false };
+    case "wave":
+      return { ...w, panic: true, faceHot: true };
+    case "clear":
+      return { ...w, panic: false, faceHot: false };
+    case "lose_lantern":
+      return { ...w, lanternsLost: w.lanternsLost + 1 };
     case "end":
       return { ...w, ended: true };
     default:

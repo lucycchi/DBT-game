@@ -55,7 +55,17 @@ export const METER_EVENTS = new Set([
   "return_distress",
   "oa_step",
   "settle",
+  "tire",
+  "rest",
+  "wave",
+  "calm",
+  "clear",
 ]);
+
+/** Where distress settles after resting, fully or only because your body made you. */
+export const REST_TARGETS = { full: 10, partial: 35 } as const;
+/** How much each way of bringing your body down lowers distress. */
+export const CALM_DROPS = { cold: 30, breath: 10 } as const;
 
 export function applyMeterEvent(m: MeterState, ev: GameEvent): MeterState {
   switch (ev.name) {
@@ -81,6 +91,24 @@ export function applyMeterEvent(m: MeterState, ev: GameEvent): MeterState {
       return moveTo(m, 58, 70, 3);
     case "oa_step":
       return moveTo(m, m.distress + OA_STEP, m.urge + 6, 1);
+    // Chapter two: each errand wears you down; resting brings you back.
+    case "tire":
+      return moveTo(m, m.distress + 14, m.urge + 15, 2);
+    case "rest": {
+      const target = REST_TARGETS[ev.arg as keyof typeof REST_TARGETS];
+      if (target === undefined) throw new Error(`rest needs full|partial, got ${ev.arg}`);
+      return moveTo(m, target, target / 2, 6);
+    }
+    // Chapter three: a wave of panic lands on top of however run-down you already are.
+    case "wave":
+      return moveTo(m, Math.max(85, m.distress + 60), 90, 3);
+    case "calm": {
+      const drop = CALM_DROPS[ev.arg as keyof typeof CALM_DROPS];
+      if (drop === undefined) throw new Error(`calm needs cold|breath, got ${ev.arg}`);
+      return moveTo(m, m.distress - drop, m.urge - drop * 0.8, 3);
+    }
+    case "clear":
+      return moveTo(m, m.distress, 25, 2);
     case "settle": {
       const target = SETTLE_TARGETS[ev.arg as Completeness];
       if (!target) throw new Error(`settle needs full|partial|minimal, got ${ev.arg}`);

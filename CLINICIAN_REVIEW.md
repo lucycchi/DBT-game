@@ -60,6 +60,26 @@ before playtesting with real players. Each points to where it lives.
    no shaming). Nell's "lanes go dark sometimes; usually somebody has to walk down them with a
    lantern first" and Ash's "That's allowed" (about hiding) carry the most meaning.
 
-11. **Safety.** The title screen says the game is not therapy or a crisis resource and points
+11. **Chapter two: guilt about resting.** The check-in asks two questions: "Would resting let
+    down someone who's counting on you, with nobody else to step in?" and "Would people you
+    care about push you away for taking a rest?" Yes to either means the guilt fits
+    (`src/logic/rest.ts`). The game then says: "Resting isn't the same as hiding. Hiding gets
+    you away from a feeling. Resting looks after the person who's having it. The difference is
+    how you go: tell someone, say when you'll be back, and then really rest." Is this
+    distinction (avoidance versus effective rest, drawing on sleep and self-care for lowering
+    vulnerability, and saying no) accurate and safe to teach?
+
+12. **Chapter three: cold water and paced breathing.** Cold water on the face with a held
+    breath drops distress by 30 points; each slow breath (at least 3 seconds in, 4.5 seconds
+    out) drops it by 10. Standard DBT materials carry a medical caution for the cold-water
+    skill (heart conditions, eating disorders, low heart rate). The game shows a gentle
+    version (splashing and holding the breath briefly) and **does not include the caution**.
+    Should it? (`src/logic/meter.ts`, knot `cold_water`, `runBreathScene` in `src/ui/scenes.ts`)
+
+13. **Chapter three: acting while flooded.** Grabbing at the lanterns while distress is high
+    loses one to the wind. The intent is a natural consequence, not a judgment. The plan
+    choices stay locked until distress is under 50. Is the "too high to think" framing faithful?
+
+14. **Safety.** The title screen says the game is not therapy or a crisis resource and points
    to emergency services and 988 (US). No crisis detection or in-game handling exists.
    DESIGN.md lists crisis handling as an open decision.

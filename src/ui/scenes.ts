@@ -6,6 +6,7 @@
 import { emotionFits, FIT_QUESTIONS, HOTSPOTS, type FitAnswers, type HotspotId, type Variant } from "../logic/facts";
 import { buildChain, type ChainRecord, type LinkId } from "../logic/chain";
 import type { Sound } from "../audio/sound";
+import { bodySignals, guiltFits, REST_QUESTIONS, type RestAnswers } from "../logic/rest";
 
 function h<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -92,6 +93,166 @@ export function runFitScene(panel: HTMLElement, variant: Variant, found: Hotspot
       h("p", { class: "hint", text: "Shame makes sense when people you care about would really push you away over this. Guilt makes sense when you went against something you care about." }),
       ...rows,
       result,
+    );
+  });
+}
+
+// --- Checking in (chapter two) -------------------------------------------------
+
+export interface CheckInResult {
+  guiltFits: boolean;
+  answers: RestAnswers;
+}
+
+/** Notice what your body is saying, then check whether guilt about resting fits. */
+export function runCheckInScene(panel: HTMLElement, tasksDone: number): Promise<CheckInResult> {
+  return new Promise((resolve) => {
+    const answers: Partial<RestAnswers> = {};
+    const result = h("div", { class: "fit-result" });
+    const rows = REST_QUESTIONS.map((q) => {
+      const opts = h("div", { class: "yn" });
+      for (const [label, value] of [["Yes", true], ["No", false]] as const) {
+        const b = button(label, "choice small", () => {
+          answers[q.key] = value;
+          opts.querySelectorAll("button").forEach((x) => x.classList.toggle("picked", x === b));
+          conclude();
+        });
+        opts.appendChild(b);
+      }
+      return h("div", { class: "fit-q" }, h("p", { text: q.text }), opts);
+    });
+
+    function conclude() {
+      if (answers.letsDown === undefined || answers.pushedAway === undefined) return;
+      const a = answers as RestAnswers;
+      const fits = guiltFits(a);
+      result.replaceChildren(
+        h("p", { text: fits ? "From your answers, the guilt about stopping matches what's happening." : "From your answers, the guilt about stopping doesn't match what's happening." }),
+        button("Continue", "primary", () => {
+          closePanel(panel);
+          resolve({ guiltFits: fits, answers: a });
+        }),
+      );
+    }
+
+    const signals = h("ul", { class: "signals" }, ...bodySignals(tasksDone).map((t) => h("li", { text: t })));
+    openPanel(
+      panel,
+      h("h2", { text: "What your body is telling you" }),
+      signals,
+      h("p", { class: "hint", text: "Bakers, Mara and Tobin all have helpers today. Ash offered to cover your stall." }),
+      ...rows,
+      result,
+    );
+  });
+}
+
+// --- Slow breathing (chapter three) ----------------------------------------------
+
+/** Hold to breathe in, let go to breathe out, slower than in. Resolves with slow breaths taken. */
+export function runBreathScene(panel: HTMLElement, sound: Sound, onBreath: () => void, reducedMotion: boolean): Promise<number> {
+  const IN_MIN = 3; // seconds
+  const OUT_MIN = 4.5;
+  const GOAL = 4;
+  return new Promise((resolve) => {
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 200 200");
+    svg.classList.add("breath-art");
+    const ring = document.createElementNS(NS, "circle");
+    ring.setAttribute("cx", "100");
+    ring.setAttribute("cy", "100");
+    ring.setAttribute("r", "90");
+    ring.setAttribute("class", "breath-ring");
+    const orb = document.createElementNS(NS, "circle");
+    orb.setAttribute("cx", "100");
+    orb.setAttribute("cy", "100");
+    orb.setAttribute("class", "breath-orb");
+    svg.append(ring, orb);
+
+    const cue = h("p", { class: "breath-cue", text: "Press and hold to breathe in." });
+    const count = h("p", { class: "hint", text: `0 of ${GOAL} slow breaths` });
+    const hold = button("Hold to breathe in", "primary breath-btn", () => {});
+    const stop = button("Back to the storm", "ghost", () => finish());
+
+    let phase: "idle" | "in" | "out" = "idle";
+    let inLength = 0;
+    let breaths = 0;
+    let raf = 0;
+    let size = 20;
+
+    const now = () => performance.now() / 1000;
+    let t0 = now();
+
+    const frame = () => {
+      const t = now() - t0;
+      if (phase === "in") size = Math.min(88, 20 + (t / IN_MIN) * 68);
+      if (phase === "out") size = Math.max(20, size - (68 / OUT_MIN) * (1 / 60));
+      orb.setAttribute("r", String(reducedMotion ? (phase === "in" ? 88 : 20) : size));
+      if (phase === "in") cue.textContent = t < IN_MIN ? "In through your nose..." : "Now let go, and breathe out slowly.";
+      if (phase === "out") cue.textContent = t < OUT_MIN ? "Out, slower than in..." : "Hold again for the next breath.";
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+
+    const press = (on: boolean) => {
+      if (on && phase !== "in") {
+        // A breath counts when the last out-breath was long enough after a long enough in-breath.
+        if (phase === "out" && inLength >= IN_MIN && now() - t0 >= OUT_MIN) {
+          breaths++;
+          count.textContent = `${breaths} of ${GOAL} slow breaths`;
+          sound.play("ui", { pitch: 0.8 + breaths * 0.1 });
+          onBreath();
+          if (breaths >= GOAL) return finish();
+        }
+        phase = "in";
+        t0 = now();
+      } else if (!on && phase === "in") {
+        inLength = now() - t0;
+        phase = "out";
+        t0 = now();
+      }
+      hold.classList.toggle("held", on);
+    };
+
+    const keyDown = (e: KeyboardEvent) => {
+      if (e.key === " " && !e.repeat) {
+        e.preventDefault();
+        press(true);
+      }
+    };
+    const keyUp = (e: KeyboardEvent) => {
+      if (e.key === " ") press(false);
+    };
+    hold.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      press(true);
+    });
+    for (const ev of ["pointerup", "pointerleave", "pointercancel"]) hold.addEventListener(ev, () => press(false));
+    window.addEventListener("keydown", keyDown);
+    window.addEventListener("keyup", keyUp);
+
+    function finish() {
+      // An out-breath in progress that's already long enough still counts.
+      if (phase === "out" && inLength >= IN_MIN && now() - t0 >= OUT_MIN && breaths < GOAL) {
+        breaths++;
+        onBreath();
+      }
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", keyDown);
+      window.removeEventListener("keyup", keyUp);
+      closePanel(panel);
+      resolve(breaths);
+    }
+
+    openPanel(
+      panel,
+      h("h2", { text: "Slow your breathing" }),
+      h("p", { class: "hint", text: "Hold Space (or the button) to breathe in for a few seconds. Let go and breathe out for longer than you breathed in." }),
+      svg,
+      cue,
+      count,
+      h("div", { class: "row" }, hold, stop),
     );
   });
 }

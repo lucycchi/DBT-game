@@ -56,6 +56,8 @@ export const USABLES: Record<string, { x: number; label: string }> = {
   lantern_table: { x: 5530, label: "the lanterns" },
   stone: { x: 2470, label: "the loose stone" },
   heap: { x: 2610, label: "the lanterns" },
+  bunting: { x: 1450, label: "the bunting" },
+  fountain_water: { x: 2550, label: "the fountain" },
 };
 
 export const DOORS = [
@@ -76,10 +78,12 @@ export const HOOKS = Array.from({ length: 12 }, (_, i) => {
 });
 export const POLES = [2180, 2920];
 
-export type Phase = "afternoon" | "after" | "night" | "festival" | "approach";
+export type Phase = "afternoon" | "after" | "night" | "festival" | "approach" | "day2" | "storm";
 
 export function phaseOf(w: WorldState, approaching: boolean): Phase {
   if (approaching) return "approach";
+  if (w.weather === "storm") return "storm";
+  if (w.level === 2 && w.time !== "night") return "day2";
   if (w.time === "night") return w.lanterns === "hung" ? "festival" : "night";
   if (w.lanterns === "workshop" || w.lanterns === "carried") return "afternoon";
   return "after";
@@ -96,6 +100,8 @@ export const NPC_SPOTS: Record<Phase, Spots> = {
   night: {},
   festival: { ...BASE, tobin: 2700, mara: 2420, pip: 2780, juno: 2830 },
   approach: { ...BASE, tobin: 2470, mara: 2400 },
+  day2: { ...BASE, tobin: 5720, mara: 2400 },
+  storm: { ...BASE, tobin: 2720, mara: 2400, pip: 2640, juno: 2880 },
 };
 
 /** Where the player stands when the story moves them. */

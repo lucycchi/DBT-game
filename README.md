@@ -1,13 +1,17 @@
 # Lantern Night
 
-A short walkable adventure, about 15 minutes, set in a village on the night of its lantern
-festival. You promised to bring the lanterns. On the way across the square you trip, they
+A short walkable adventure in three chapters, about 25 minutes, set in a village during its
+lantern festival. You promised to bring the lanterns. On the way across the square you trip, they
 scatter, and someone laughs. What happens next is up to you.
 
-Underneath, it teaches one skill from DBT (dialectical behavior therapy): what to do when
-shame shows up. If the feeling doesn't match what actually happened, do the opposite of
-what it urges, all the way. If it does match, make things right. The game never names the
-skill. It shows what it's for.
+Underneath, it teaches skills from DBT (dialectical behavior therapy), one per chapter. The
+game never names them; it shows what each one is for:
+1. **When shame shows up:** if the feeling doesn't match what happened, do the opposite of
+   what it urges, all the way. If it does match, make things right.
+2. **When pulling back is the right call:** check whether the guilt about stopping fits, then
+   rest on purpose: tell someone, and really rest. Saying no is allowed.
+3. **When a feeling is too big to think through:** bring your body down first (cold water,
+   slow breathing), then make a plan.
 
 **Play it:** https://lucycchi.github.io/DBT-game/ (desktop browser, with sound).
 
@@ -22,6 +26,7 @@ Design decisions are in [DESIGN.md](DESIGN.md), the cast and dialogue rules in
 | Walk | <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd>, or click where you want to go |
 | Talk, use things, go through doors | <kbd>E</kbd> or <kbd>Space</kbd> when a prompt appears, or click the person |
 | Read on in a conversation | <kbd>Space</kbd>, <kbd>Enter</kbd> or click; number keys pick answers |
+| Breathe in, then out (storm) | hold <kbd>Space</kbd> or the on-screen button, then let go |
 | Keep your head up (walking back) | hold <kbd>Shift</kbd>, or hold the on-screen Head up button |
 
 The goal and what to do next are always shown in the top left. People with a speech bubble
@@ -55,6 +60,21 @@ hollow at the top.
 7. **The festival.** Everyone has something to say, depending on what you did. Walk home.
 8. **Looking back.** A short timeline of your day; tap any moment to see what doing
    something different there would change.
+
+**Chapter two: The morning after.** You slept three hours and everyone has an errand for
+you. Each one you take on wears you down, and your body shows it; you can say no to any of
+them. Sit on the fountain wall to check in: does the guilt about stopping match what's
+happening? Resting on purpose means telling Ash or Mara and going up to the hollow as
+yourself, not as the shell. Push through every errand and your body decides for you.
+
+**Chapter three: The storm.** A storm hits the last night of the festival and panic spikes
+too high to make a plan. Bring your body down first: splash cold water from the fountain
+(a fast, big drop) or play the slow-breathing game (hold to breathe in, let go to breathe out
+for longer). Grabbing at the lanterns while panicking loses one to the wind. Once you're
+calm, help Pip breathe, then tie every lantern down while gusts shove you around. How well
+you rested in chapter two sets how big the wave is.
+
+The title screen can jump straight to chapter two or three.
 
 Nothing is scored. The village shows the costs and the recoveries, and it can always recover.
 

@@ -5,6 +5,7 @@ import type { StoryChoice } from "../engine";
 import type { Sound } from "../audio/sound";
 
 export interface Hud {
+  setGoal(text: string): void;
   setNext(choices: StoryChoice[]): void;
   showArea(name: string): void;
   controls(mode: "walk" | "approach" | "hang" | "hidden"): void;
@@ -51,11 +52,16 @@ export function createHud(root: HTMLElement, sound: Sound): Hud {
   const CONTROLS = {
     walk: "<kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk, use, enter · or click where to go",
     approach: "<kbd>←</kbd> walk toward Mara · hold <kbd>Shift</kbd> (or the Head up button) to keep your head up",
-    hang: "Walk under each hook and press <kbd>E</kbd> to hang a lantern",
+    hang: "Walk under each hook and press <kbd>E</kbd>",
     hidden: "",
   };
 
+  const goal = root.querySelector<HTMLElement>(".hud-goal p")!;
+
   return {
+    setGoal(text) {
+      goal.textContent = text;
+    },
     setNext(choices) {
       next.replaceChildren();
       for (const c of choices) {

@@ -208,8 +208,8 @@ kbd {
 .how { list-style: none; padding: 0; margin: 0 0 1.2em; color: var(--paper); line-height: 1.9; font-size: 0.95em; }
 .title-actions { display: flex; gap: 0.8em; justify-content: center; flex-wrap: wrap; margin-bottom: 1em; }
 .title-actions button { font-size: 1.05em; padding: 0.7em 1.4em; }
-.small { color: var(--muted); font-size: 0.9em; line-height: 1.5; margin: 0.4em auto; max-width: 46em; }
-.fine { font-size: 0.75em; opacity: 0.8; }
+.title-card .small { color: var(--muted); font-size: 0.9em; line-height: 1.5; margin: 0.4em auto; max-width: 46em; }
+.title-card .fine { font-size: 0.75em; opacity: 0.8; }
 
 @media (max-width: 720px) {
   body { place-items: start center; overflow: auto; }
@@ -231,3 +231,15 @@ kbd {
 .dlg-choices.compact .choice { font-size: 0.85em; padding: 0.4em 0.8em; }
 .yn { justify-content: flex-start; }
 .yn .choice { flex: 0 0 auto; width: auto; }
+
+/* Chapter two and three panels */
+.signals { margin: 0; padding-left: 1.2em; font-family: var(--serif); line-height: 1.6; }
+.breath-art { width: 100%; max-height: 32cqw; }
+.breath-ring { fill: none; stroke: #ffffff22; stroke-width: 2; stroke-dasharray: 4 6; }
+.breath-orb { fill: #8fc7d6; opacity: 0.85; filter: drop-shadow(0 0 18px #8fc7d6); transition: r 0.08s linear; }
+.breath-cue { margin: 0; text-align: center; font-family: var(--serif); font-size: 1.3em; color: var(--paper); }
+.panel-card .row { display: flex; gap: 0.7em; justify-content: center; }
+.breath-btn { touch-action: none; user-select: none; }
+.breath-btn.held { background: #fff1c9; box-shadow: 0 0 20px #f2b54a; }
+.chapters { color: var(--muted); font-size: 0.9em; margin: 0 0 0.8em; }
+.link-btn { background: none; border: none; padding: 0 0.2em; color: var(--amber); text-decoration: underline; text-underline-offset: 3px; font-size: 1em; }

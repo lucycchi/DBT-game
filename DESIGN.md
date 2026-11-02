@@ -95,8 +95,19 @@ The Game Week brief requires one of three genres; the click-through story fit no
 - **Every asset generated in code:** SVG art, synthesized music and sound.
 - **Public link:** GitHub Pages, repo made public. The brief PDF is kept out of the repo.
 
+## Chapters two and three (2026-11-01)
+- **The morning after (pulling back as the effective choice):** answers the earlier open
+  item "a scenario where withdrawing is the effective choice", so the game doesn't read as
+  "hiding is bad". Same hollow, different function: escaping a feeling versus looking after
+  yourself. Errands wear you down; saying no is a choice; a check-in asks whether guilt about
+  resting fits; resting effectively means telling someone first.
+- **The storm (bringing the body down first):** cold water and paced breathing lower
+  distress until planning becomes possible; acting while flooded loses a lantern.
+- **Vulnerability carries across chapters:** resting fully in chapter two makes the panic
+  wave smaller in chapter three.
+
 ## Open decisions
 - Audience: clinical adjunct (with therapist) vs. general wellness product.
   Affects evidence needs, content review, crisis handling, business model.
 - Crisis/safety handling if at-risk players use it.
-- Optional second scenario where withdrawing is the effective choice.
+- ~~Optional second scenario where withdrawing is the effective choice.~~ Built as chapter two.

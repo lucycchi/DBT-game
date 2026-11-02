@@ -91,6 +91,8 @@ export class WorldScene extends Phaser.Scene {
   private headUpButton = false;
   private approaching = false;
   private hanging = false;
+  private rain!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private gust = 0;
   /** Ignore the key press that closed the dialogue, which Phaser sees a moment later. */
   private unlockedAt = 0;
 
@@ -169,6 +171,19 @@ export class WorldScene extends Phaser.Scene {
     this.laneFog = this.add.image(0, 0, "fog").setOrigin(0).setDisplaySize(1250, VIEW_H).setDepth(20).setAlpha(0);
     this.dark = this.add.renderTexture(0, 0, VIEW_W, VIEW_H).setOrigin(0).setScrollFactor(0).setDepth(25);
     this.vignette = this.add.image(0, 0, "vignette").setOrigin(0).setScrollFactor(0).setDisplaySize(VIEW_W, VIEW_H).setDepth(35).setAlpha(0);
+    this.rain = this.add.particles(0, -20, "dot", {
+      x: { min: -100, max: VIEW_W + 200 },
+      speedY: { min: 700, max: 900 },
+      speedX: { min: -260, max: -180 },
+      scaleX: 0.12,
+      scaleY: 0.9,
+      alpha: { start: 0.45, end: 0.2 },
+      lifespan: 1100,
+      frequency: 6,
+      quantity: 3,
+      tint: 0xb8c8e0,
+      emitting: false,
+    }).setScrollFactor(0).setDepth(36);
     this.prompt = this.add.text(0, 0, "", { fontFamily: "Georgia, serif", fontSize: "20px", color: "#2a1a05", backgroundColor: "#f6e7c8", padding: { x: 10, y: 6 } }).setOrigin(0.5, 1).setDepth(50).setVisible(false);
 
     const kb = this.input.keyboard!;
@@ -199,7 +214,10 @@ export class WorldScene extends Phaser.Scene {
       this.lastLocation = w.location;
     }
     const flashback = w.lens === "shame";
-    this.setSky(w.time);
+    this.setSky(w.weather === "storm" ? "storm" : w.time);
+    const storm = w.weather === "storm";
+    if (storm && !this.rain.emitting) this.rain.start();
+    if (!storm && this.rain.emitting) this.rain.stop();
 
     // Lanterns: on the table, in your arms, on the ground, or on the string.
     this.tablePile.setVisible(w.lanterns === "workshop");
@@ -208,11 +226,18 @@ export class WorldScene extends Phaser.Scene {
     this.heap.setVisible(w.lanterns === "heaped");
     const night = w.time === "night";
     this.hookLanterns.forEach((img, i) => {
-      if (!this.hanging) img.setVisible(w.lanterns === "hung");
+      if (!this.hanging) img.setVisible(w.lanterns === "hung" && i >= w.lanternsLost);
+      // In the storm, untied lanterns swing; tied ones (or calm weather) hang still.
+      if (storm && !img.getData("tied")) {
+        if (!img.getData("swing")) img.setData("swing", this.tweens.add({ targets: img, angle: { from: -18, to: 18 }, yoyo: true, repeat: -1, duration: 380 + i * 23, ease: "Sine.inOut" }));
+      } else if (img.getData("swing")) {
+        (img.getData("swing") as Phaser.Tweens.Tween).stop();
+        img.setData("swing", null).setAngle(0);
+      }
       const lit = night && i < w.lanternsHung;
       if (i === 11 && w.heirloom !== "whole") img.setTexture(w.heirloom === "mended" ? "lantern-mended" : "lantern-torn");
       img.setTint(lit || !night ? 0xffffff : 0x8a8098);
-      this.tweens.add({ targets: this.hookGlows[i], alpha: lit && w.lanterns === "hung" ? 0.45 : 0, duration: 700, delay: i * 220 });
+      this.tweens.add({ targets: this.hookGlows[i], alpha: lit && w.lanterns === "hung" && i >= w.lanternsLost ? 0.45 : 0, duration: 700, delay: i * 220 });
     });
 
     // Player
@@ -418,6 +443,48 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  /** Tie each lantern down before the wind takes it, while gusts shove you around. */
+  runSecure(): Promise<void> {
+    const todo = this.hookLanterns.map((_, i) => i).filter((i) => i >= this.world.lanternsLost);
+    let tied = 0;
+    this.hanging = true;
+    todo.forEach((i) => this.hookMarkers[i].setVisible(true));
+    this.setLocked(false);
+    return new Promise((resolve) => {
+      const tryTie = () => {
+        const i = this.nearestHook();
+        if (i < 0 || !todo.includes(i) || this.hookLanterns[i].getData("tied")) return;
+        const img = this.hookLanterns[i].setData("tied", true);
+        (img.getData("swing") as Phaser.Tweens.Tween | null)?.stop();
+        img.setData("swing", null);
+        this.tweens.add({ targets: img, angle: 0, duration: 250, ease: "Back.out" });
+        this.hookMarkers[i].setVisible(false);
+        this.hooks.sound.play("hang", { pitch: 0.9 + i * 0.03 });
+        tied++;
+        if (tied === todo.length) {
+          this.events.off("update", tick);
+          for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].off("down", tryTie);
+          this.hanging = false;
+          this.prompt.setVisible(false);
+          this.setLocked(true);
+          resolve();
+        }
+      };
+      const tick = (_t: number, dms: number) => {
+        const dt = dms / 1000;
+        // Gusts come and go, blowing one way and then the other.
+        this.gust = Math.sin(this.time.now / 900) * 140 + Math.sin(this.time.now / 370) * 60;
+        if (this.moveTo === null) this.player.x += this.gust * dt;
+        this.player.x = Phaser.Math.Clamp(this.player.x, 2150, 2950);
+        const i = this.nearestHook();
+        if (i >= 0 && todo.includes(i) && !this.hookLanterns[i].getData("tied")) this.showPrompt(HOOKS[i].x, "E  Tie it down");
+        else this.showPrompt(this.player.x, `${todo.length - tied} to tie down`);
+      };
+      for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].on("down", tryTie);
+      this.events.on("update", tick);
+    });
+  }
+
   sparkle(x: number, y: number) {
     this.add.particles(x, y, "sparkle", { speed: { min: 60, max: 160 }, scale: { start: 0.6, end: 0 }, lifespan: 700, quantity: 14, emitting: false }).setDepth(45).explode(14);
   }
@@ -612,13 +679,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private moodFor(w: WorldState) {
-    if (w.form === "shell") return "hollow" as const;
+    if (w.weather === "storm") return w.panic ? ("shame" as const) : ("night" as const);
+    if (w.form === "shell" || (w.location === "cave" && w.level === 2)) return "hollow" as const;
     if (w.lens === "shame") return "shame" as const;
     if (w.time === "night") return w.lanterns === "hung" ? ("festival" as const) : ("night" as const);
     return "day" as const;
   }
 
-  private setSky(time: WorldState["time"]) {
+  private setSky(time: string) {
     const key = `sky-${time in SKIES ? time : "afternoon"}`;
     if (key === this.currentSky) return;
     this.currentSky = key;
@@ -632,7 +700,7 @@ export class WorldScene extends Phaser.Scene {
         this.skyB.setAlpha(0);
       },
     });
-    const tint = time === "night" ? 0x55608a : time === "morning" ? 0xdde8ee : 0xffffff;
+    const tint = time === "night" || time === "storm" ? 0x55608a : time === "morning" ? 0xdde8ee : time === "sunset" ? 0xf0b8a0 : 0xffffff;
     this.far.setTint(tint);
   }
 
@@ -683,7 +751,7 @@ export class WorldScene extends Phaser.Scene {
   private drawDarkness() {
     const w = this.world;
     const festival = w.time === "night" && w.lanterns === "hung";
-    const alpha = w.time === "night" ? (festival ? 0.72 - w.squareLight * 0.2 : 0.8) : w.form === "shell" ? 0.35 : 0;
+    const alpha = w.time === "night" ? (festival ? 0.72 - w.squareLight * 0.2 + (w.weather === "storm" ? 0.1 : 0) : 0.8) : w.form === "shell" ? 0.35 : w.time === "sunset" ? 0.2 : 0;
     this.dark.clear();
     if (alpha <= 0) return;
     const cam = this.cameras.main;

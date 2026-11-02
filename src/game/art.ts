@@ -290,6 +290,7 @@ export const SKIES: Record<string, [string, string]> = {
   sunset: ["#e88a5a", "#f6cf94"],
   night: ["#0c1130", "#26305e"],
   morning: ["#b9d6e4", "#f2e6d0"],
+  storm: ["#1b2030", "#3d4658"],
 };
 
 function skySVG(top: string, bottom: string): string {

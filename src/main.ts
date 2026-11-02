@@ -4,7 +4,7 @@
 // walks to them; plain choices appear in the dialogue box.
 
 import Phaser from "phaser";
-import { Engine, type StoryChoice } from "./engine";
+import { Engine, type StoryChoice, type StoryLine } from "./engine";
 import { applyEvent, initialState, type GameState } from "./logic/state";
 import type { HotspotId, Variant } from "./logic/facts";
 import type { ChainRecord } from "./logic/chain";
@@ -16,7 +16,7 @@ import { GROUND_Y, VIEW_H, VIEW_W } from "./game/layout";
 import { createDialogueBox } from "./ui/dialogue";
 import { createHud } from "./ui/hud";
 import { createMeterView } from "./ui/meter";
-import { factCard, runChainScene, runFitScene, runMendScene } from "./ui/scenes";
+import { factCard, runBreathScene, runChainScene, runCheckInScene, runFitScene, runMendScene } from "./ui/scenes";
 import { PlaytestLog } from "./playtest";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -46,6 +46,20 @@ const EVENT_SFX: Partial<Record<string, Sfx>> = {
   end: "ending",
 };
 
+/** Goal and meter labels for each chapter. */
+const CHAPTERS: Record<number, { title: string; goal: string; meter: [string, string] }> = {
+  1: { title: "Lantern Night", goal: "Light up the square for the lantern festival.", meter: ["How bad it feels", "Pull to hide"] },
+  2: { title: "Chapter two: The morning after", goal: "Get ready for the last night of the festival.", meter: ["How worn out you are", "Pull to rest"] },
+  3: { title: "Chapter three: The storm", goal: "Keep the lanterns lit through the storm.", meter: ["How bad it feels", "Racing thoughts"] },
+};
+
+function showChapter(level: number) {
+  const c = CHAPTERS[level];
+  hud.setGoal(c.goal);
+  hud.showArea(c.title);
+  document.querySelectorAll<HTMLElement>("#meter .bar-label span:first-child").forEach((el, i) => (el.textContent = c.meter[i]));
+}
+
 let world: WorldScene | null = null;
 let game: Phaser.Game | null = null;
 let state: GameState = initialState();
@@ -66,6 +80,7 @@ function apply(ev: GameEvent) {
   }
   world?.applyState(state.world);
   meter.render(state.meter);
+  if (ev.name === "chapter") showChapter(state.world.level);
   const sfx = EVENT_SFX[ev.name];
   if (sfx) sound.play(sfx);
   if (ev.name === "fact" && ev.arg) {
@@ -125,19 +140,22 @@ function waitForChoice(choices: StoryChoice[]): Promise<StoryChoice> {
   });
 }
 
-async function play(chosen: Variant) {
+async function play(chosen: Variant, from?: string) {
   variant = chosen;
   state = initialState();
   meter.render(state.meter);
-  const engine = new Engine(await storyJson, variant);
+  showChapter(1);
+  const engine = new Engine(await storyJson, variant, () => state.meter.distress);
+  if (from) engine.startAt(from);
   const log = new PlaytestLog(variant);
   await bootWorld();
   hud.onHeadUp((on) => world!.setHeadUp(on));
   log.record("start", { variant });
 
   while (true) {
-    const batch = engine.continueBatch();
-    for (const line of batch) {
+    let scene: StoryLine["scene"] = null;
+    for (const line of engine.lines()) {
+      scene = line.scene;
       for (const ev of line.events) {
         apply(ev);
         log.record("event", ev);
@@ -152,7 +170,6 @@ async function play(chosen: Variant) {
       }
     }
 
-    const scene = batch[batch.length - 1]?.scene;
     if (scene) {
       dialogue.hide();
       hud.setNext([]);
@@ -173,6 +190,18 @@ async function play(chosen: Variant) {
       } else if (scene === "hang") {
         hud.controls("hang");
         await world!.runHang();
+        hud.controls("hidden");
+      } else if (scene === "checkin") {
+        const r = await runCheckInScene(panel, Number(engine.getVar("tasks_done")));
+        log.record("checkin", r);
+        engine.setVar("guilt_fits", r.guiltFits);
+      } else if (scene === "breathe") {
+        const n = await runBreathScene(panel, sound, () => apply({ name: "calm", arg: "breath" }), reducedMotion);
+        log.record("breathe", n);
+        engine.setVar("breaths", n);
+      } else if (scene === "secure") {
+        hud.controls("hang");
+        await world!.runSecure();
         hud.controls("hidden");
       } else if (scene === "chain") {
         const record: ChainRecord = {
@@ -231,11 +260,11 @@ function showEnd(log: PlaytestLog) {
   panel.hidden = false;
 }
 
-function begin(v: Variant) {
+function begin(v: Variant, from?: string) {
   sound.unlock();
   sound.play("ui");
   titleCard.hidden = true;
-  play(v).catch((err) => {
+  play(v, from).catch((err) => {
     console.error(err);
     void dialogue.say(String(err instanceof Error ? err.message : err), null);
   });
@@ -243,6 +272,8 @@ function begin(v: Variant) {
 
 $("#start-main").addEventListener("click", () => begin("main"));
 $("#start-promise").addEventListener("click", () => begin("promise"));
+$("#start-ch2").addEventListener("click", () => begin("main", "start_day_two"));
+$("#start-ch3").addEventListener("click", () => begin("main", "start_storm"));
 window.addEventListener("pointerdown", () => sound.unlock(), { once: true });
 window.addEventListener("keydown", () => sound.unlock(), { once: true });
 

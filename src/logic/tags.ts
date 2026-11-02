@@ -10,8 +10,10 @@ export interface GameEvent {
 
 // fit: answer whether the feeling matches what happened. approach: walk back
 // against the pull to hide. mend/hang: hands-on puzzles. chain: look back.
-export type SceneName = "fit" | "approach" | "mend" | "hang" | "chain";
-const SCENES: readonly SceneName[] = ["fit", "approach", "mend", "hang", "chain"];
+// checkin: does the guilt about resting match what's happening? breathe: paced
+// breathing. secure: tie the lanterns down in the wind.
+export type SceneName = "fit" | "approach" | "mend" | "hang" | "chain" | "checkin" | "breathe" | "secure";
+const SCENES: readonly SceneName[] = ["fit", "approach", "mend", "hang", "chain", "checkin", "breathe", "secure"];
 
 export interface ParsedTags {
   events: GameEvent[];

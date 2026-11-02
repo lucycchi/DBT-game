@@ -47,28 +47,42 @@ type InkValue = string | number | boolean;
 export class Engine {
   private story: Story;
 
-  constructor(json: string | object, variant: Variant) {
+  /** `distress` reads the meter live; Ink never calls it while reading ahead. */
+  constructor(json: string | object, variant: Variant, distress: () => number = () => 0) {
     this.story = new Story(typeof json === "string" ? json : JSON.stringify(json));
     this.story.BindExternalFunction(
       "outcome",
       (a: boolean, b: boolean, c: boolean) => outcome(Boolean(a), Boolean(b), Boolean(c)),
       true,
     );
+    this.story.BindExternalFunction("distress", () => distress(), false);
     this.setVar("variant", variant);
   }
 
-  /** Continue until the next choice point, or until a line that opens a scene. */
-  continueBatch(): StoryLine[] {
-    const lines: StoryLine[] = [];
+  /** Start somewhere other than the beginning, e.g. a chapter. */
+  startAt(knot: string): void {
+    this.story.ChoosePathString(knot);
+  }
+
+  /**
+   * Lines up to the next choice point, or up to a line that opens a scene.
+   * Lazy: each line is read only after the caller has handled the previous one,
+   * so its events are applied before the story asks the game anything.
+   */
+  *lines(): Generator<StoryLine> {
     while (this.story.canContinue) {
       const raw = (this.story.Continue() ?? "").trim();
       const { events, scene } = parseTags(this.story.currentTags);
       const spoken = parseSpoken(raw);
       if (spoken?.expression) events.push({ name: "face", arg: `${spoken.speaker}:${spoken.expression}` });
-      lines.push({ text: spoken ? spoken.text : raw, spoken, events, scene });
-      if (scene) break;
+      yield { text: spoken ? spoken.text : raw, spoken, events, scene };
+      if (scene) return;
     }
-    return lines;
+  }
+
+  /** All lines up to the next choice point at once (for callers that don't apply events). */
+  continueBatch(): StoryLine[] {
+    return [...this.lines()];
   }
 
   get choices(): StoryChoice[] {
