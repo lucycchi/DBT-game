@@ -10,7 +10,9 @@ import type { HotspotId } from "../logic/facts";
 import type { WorldState } from "../logic/world";
 import type { Sound } from "../audio/sound";
 import { pickBark } from "./barks";
-import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, svgUri, WINDOW_LIGHTS, SKIES } from "./art";
+import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, WINDOW_LIGHTS, SKIES } from "./art";
+import { Puppet } from "./puppet";
+import type { Frame } from "../ui/plush";
 import {
   AREAS, DOORS, EDGE_X, FOUNTAIN_X, GROUND_Y, groundY, HOOKS, INTERACT_RANGE, INTERIOR, laneBlocked, NPC_SPOTS,
   phaseOf, PLAYER_SPOTS, USABLES, VIEW_H, VIEW_W, WORLD_W, ZONES, areaAt, type Area,
@@ -65,7 +67,11 @@ export class WorldScene extends Phaser.Scene {
   private stack!: Phaser.GameObjects.Image;
   private candle!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Ellipse;
-  private npcs = new Map<Npc, { img: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse; bubble: Phaser.GameObjects.Image; bark: Phaser.GameObjects.Text; barkedAt: number }>();
+  private npcs = new Map<Npc, { img: Phaser.GameObjects.Image; puppet: Puppet; shadow: Phaser.GameObjects.Ellipse; bubble: Phaser.GameObjects.Image; bark: Phaser.GameObjects.Text; barkedAt: number }>();
+  private you!: Puppet;
+  /** Character frames being made on demand (talking and blinking for each feeling). */
+  private pendingTextures = new Set<string>();
+  private reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   /** When anyone last made a passing remark, so they don't all talk at once. */
   private lastBark = -99999;
   private hookLanterns: Phaser.GameObjects.Image[] = [];
@@ -122,6 +128,7 @@ export class WorldScene extends Phaser.Scene {
     this.lastLocation = null;
     this.currentSky = "";
     this.npcs = new Map();
+    this.pendingTextures = new Set();
     this.hookLanterns = [];
     this.hookGlows = [];
     this.hookMarkers = [];
@@ -151,8 +158,8 @@ export class WorldScene extends Phaser.Scene {
     for (const a of AREAS) this.add.image(a.x0, 0, `area-${a.id}`).setOrigin(0).setDepth(-10);
 
     // Ambient life: chimney smoke, fountain spray, fireflies on the hill.
-    for (const x of [325, 815]) {
-      this.add.particles(x, GROUND_Y - 300, "dot", { speedY: { min: -30, max: -18 }, speedX: { min: 4, max: 14 }, scale: { start: 0.5, end: 1.6 }, alpha: { start: 0.35, end: 0 }, lifespan: 4000, frequency: 500, tint: 0xd8d2c8 }).setDepth(-9);
+    for (const [x, y] of [[332, GROUND_Y - 300], [666, GROUND_Y - 262], [1600, GROUND_Y - 280]]) {
+      this.add.particles(x, y, "dot", { speedY: { min: -30, max: -18 }, speedX: { min: 4, max: 14 }, scale: { start: 0.5, end: 1.6 }, alpha: { start: 0.35, end: 0 }, lifespan: 4000, frequency: 500, tint: 0xd8d2c8 }).setDepth(-9);
     }
     this.add.particles(FOUNTAIN_X, GROUND_Y - 200, "dot", { speedX: { min: -70, max: 70 }, speedY: { min: -90, max: -40 }, gravityY: 220, scale: { start: 0.25, end: 0.1 }, alpha: { start: 0.8, end: 0 }, lifespan: 900, frequency: 60, tint: 0xa6d4e0 }).setDepth(-5);
 
@@ -180,8 +187,8 @@ export class WorldScene extends Phaser.Scene {
         ev?.stopPropagation?.();
         this.walkToAndInteract(img.x);
       });
-      this.tweens.add({ targets: img, scaleY: CHAR_DISPLAY_SCALE * 1.015, yoyo: true, repeat: -1, duration: 1400 + Math.random() * 600, ease: "Sine.inOut" });
-      this.npcs.set(id, { img, shadow, bubble, bark, barkedAt: -99999 });
+      const puppet = new Puppet(this, id, img, this.ensureCharTexture, this.reducedMotion);
+      this.npcs.set(id, { img, puppet, shadow, bubble, bark, barkedAt: -99999 });
     }
 
     this.playerShadow = this.add.ellipse(0, 0, 64, 12, 0x000000, 0.2).setDepth(3);
@@ -190,6 +197,7 @@ export class WorldScene extends Phaser.Scene {
     this.candle = this.add.image(22, -40, "candle").setScale(0.7);
     this.shell = this.add.image(0, 0, "shell").setOrigin(0.5, 1).setScale(0.8).setVisible(false);
     this.player = this.add.container(600, 600, [this.body, this.stack, this.candle, this.shell]).setDepth(5);
+    this.you = new Puppet(this, "you", this.body, this.ensureCharTexture, this.reducedMotion);
 
     this.laneFog = this.add.image(0, 0, "fog").setOrigin(0).setDisplaySize(1250, VIEW_H).setDepth(20).setAlpha(0);
     this.dark = this.add.renderTexture(0, 0, VIEW_W, VIEW_H).setOrigin(0).setScrollFactor(0).setDepth(25);
@@ -288,9 +296,7 @@ export class WorldScene extends Phaser.Scene {
     this.body.setVisible(w.form === "person");
     this.shell.setVisible(w.form === "shell");
     this.candle.setVisible(w.hasLight && w.form === "person");
-    this.body.setTexture(`char-you-${this.playerFace(w)}`);
-    const slumped = w.posture === "slumped";
-    this.body.setRotation(slumped ? 0.12 * this.facing : 0).setScale(CHAR_DISPLAY_SCALE, CHAR_DISPLAY_SCALE * (slumped ? 0.94 : w.posture === "upright" ? 1.04 : 1));
+    this.you.setFeeling(this.playerFace(w));
 
     // Villagers
     const spots = NPC_SPOTS[phaseOf(w, this.approaching)];
@@ -304,7 +310,7 @@ export class WorldScene extends Phaser.Scene {
       n.shadow.setPosition(x, groundY(x));
       const fact = NPC_FACT[id];
       const pointing = flashback && fact !== undefined && !w.factsFound.includes(fact);
-      n.img.setTexture(pointing ? `char-${id}-point` : `char-${id}-${w.faces[id] ?? "neutral"}`);
+      n.puppet.setFeeling(w.faces[id] ?? "neutral", pointing);
       n.img.setTint(pointing ? 0xd9a0a0 : 0xffffff);
       n.img.setFlipX(pointing ? x > this.player.x : false);
     }
@@ -363,6 +369,25 @@ export class WorldScene extends Phaser.Scene {
   setHeadUp(on: boolean) {
     this.headUpButton = on;
   }
+
+  /** Open or close a character's mouth while their line is being typed out. */
+  setMouth(id: CharacterId, open: boolean) {
+    if (id === "you") this.you.setMouth(open);
+    else this.npcs.get(id as Npc)?.puppet.setMouth(open);
+  }
+
+  /** Make a character frame on first use; false until it's ready. */
+  private ensureCharTexture = (id: CharacterId, expr: Expression, frame: Frame): boolean => {
+    const key = charKey(id, expr, frame);
+    if (this.textures.exists(key)) return true;
+    if (!this.pendingTextures.has(key)) {
+      this.pendingTextures.add(key);
+      this.load.svg(key, svgUri(charTextureSVG(id, expr, frame)));
+      this.load.once(`filecomplete-svg-${key}`, () => this.pendingTextures.delete(key));
+      if (!this.load.isLoading()) this.load.start();
+    }
+    return false;
+  };
 
   /** Face a character the player just started talking to. */
   faceCharacter(id: CharacterId) {
@@ -557,14 +582,27 @@ export class WorldScene extends Phaser.Scene {
     this.body.setFlipX(this.facing < 0);
     this.candle.x = 22 * this.facing;
     this.stack.x = 10 * this.facing;
+    let bob = 0;
     if (this.walking && this.world.form === "person") {
       this.stepClock += dt;
-      this.body.y = -Math.abs(Math.sin(this.stepClock * 11)) * 5;
+      bob = -Math.abs(Math.sin(this.stepClock * 11)) * 5;
       if (this.stepClock > 0.3) {
         this.stepClock = 0;
         this.hooks.sound.play("step");
       }
-    } else this.body.y = 0;
+    }
+    // The player's posture (slumped, upright) plus their feeling's movement.
+    const now = this.time.now;
+    const posture = this.world.posture;
+    this.you.update(now);
+    this.you.apply(CHAR_DISPLAY_SCALE, posture === "slumped" ? 0.94 : posture === "upright" ? 1.04 : 1, posture === "slumped" ? 7 * this.facing : 0);
+    this.body.y = bob + this.you.m.dy;
+    for (const [, n] of this.npcs) {
+      if (!n.img.visible) continue;
+      n.puppet.update(now);
+      n.puppet.apply(CHAR_DISPLAY_SCALE);
+      n.img.y = groundY(n.img.x) + n.puppet.m.dy;
+    }
 
     const area = areaAt(this.player.x);
     if (area !== this.area) {
@@ -577,8 +615,8 @@ export class WorldScene extends Phaser.Scene {
     const fog = this.world.time === "morning" || this.world.time === "night" ? Math.min(0.92, 0.5 + this.world.darkness * 0.2) * Math.sign(this.world.darkness) * (this.world.hasLight ? 0.55 : 1) : 0;
     this.laneFog.setAlpha(Phaser.Math.Linear(this.laneFog.alpha, fog, 0.05));
     for (const [, n] of this.npcs) {
-      n.bubble.setPosition(n.img.x, n.img.y - 175);
-      n.bark.setPosition(n.img.x, n.img.y - 232);
+      n.bubble.setPosition(n.img.x, groundY(n.img.x) - 135);
+      n.bark.setPosition(n.img.x, groundY(n.img.x) - 175);
     }
     if (!this.locked && !this.approaching && !this.hanging) this.maybeBark();
     if (!this.approaching && !this.hanging && !this.locked) this.updatePrompt();
@@ -659,7 +697,7 @@ export class WorldScene extends Phaser.Scene {
   /** A label over the world. With an action, it's tappable and drives the action button. */
   private showPrompt(x: number, text: string, action?: () => void) {
     const shown = action && !this.hooks.touch ? `E  ${text}` : text;
-    this.prompt.setText(shown).setPosition(x, groundY(x) - 190).setVisible(true);
+    this.prompt.setText(shown).setPosition(x, groundY(x) - 165).setVisible(true);
     this.promptAction = action ?? null;
     this.setActionButton(action ? text : null);
   }
@@ -746,11 +784,13 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.centerOn(x, VIEW_H / 2);
   }
 
+  /** The player's face follows how they're doing unless the story sets it. */
   private playerFace(w: WorldState): Expression {
     if (w.faces.you) return w.faces.you;
-    if (w.lens === "shame" || w.faceHot) return "worried";
+    if (w.panic) return "scared";
+    if (w.lens === "shame" || w.faceHot) return "embarrassed";
     if (w.posture === "slumped") return "sad";
-    if (w.ended || (w.lanterns === "hung" && w.squareLight === 1)) return "smile";
+    if (w.ended || (w.lanterns === "hung" && w.squareLight === 1)) return "happy";
     return "neutral";
   }
 

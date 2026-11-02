@@ -27,7 +27,7 @@ document.body.classList.toggle("touch", touch);
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
 const sound = createSound();
-const dialogue = createDialogueBox($("#dialogue"), sound, reducedMotion);
+const dialogue = createDialogueBox($("#dialogue"), sound, reducedMotion, (who, open) => world?.setMouth(who, open));
 const hud = createHud($("#hud"), sound, touch);
 const meter = createMeterView($("#meter"), reducedMotion);
 const panel = $("#panel");

@@ -286,7 +286,7 @@ But is that what actually happened? Talk to people. Look around the fountain. Fi
 === fact_tobin ===
 ~ facts_seen++
 tobin/sad: Hey. I'm sorry I laughed. I went down on that same stone this morning. Took out a whole string of bunting.
-tobin/worried: I laugh when I'm nervous. It wasn't about you. #event: fact tobin
+tobin/embarrassed: I laugh when I'm nervous. It wasn't about you. #event: fact tobin
 ->->
 
 === fact_bakers ===
@@ -780,7 +780,7 @@ Outside, the whole village is already up. Tonight is the last night of the festi
 
 === bread_ask ===
 oda: Morning! Could you carry the bread trays to the square? Wren's back is acting up.
-wren/worried: My back is fine. My back has never been better.
+wren/upset: My back is fine. My back has never been better.
 + ["Sure, I'll take them."]
     ~ task = "bread"
     oda/smile: You're a treasure.
@@ -952,7 +952,7 @@ Chapter three: The storm. #event: chapter 3
 The last night of the festival. The lanterns are lit and the square is full.
 Then the wind changes. #event: storm on
 A gust tears across the square. The lantern string bucks and snaps. Someone's hat cartwheels past the fountain.
-pip/worried: The lanterns!
+pip/scared: The lanterns!
 Your heart slams. Your breath goes short and high. Everything is too loud at once. #event: wave
 -> storm_hub
 
@@ -1178,7 +1178,7 @@ nell/smile: Nobody ever owned up. I've never painted over it.
 * {phase == "day2" && rest_ok && not told} [Tell Ash you're taking the afternoon]
     -> tell_ash ->
 * {phase == "day2" && ash_shop} [Ask how the shop plans are going]
-    ash/worried: I signed the lease this morning. I haven't slept either. Don't tell anyone.
+    ash/tired: I signed the lease this morning. I haven't slept either. Don't tell anyone.
     ** ["That's huge. Well done."]
         ash/warm: It's terrifying. Thank you.
     ** ["You should take a rest too."]
@@ -1235,7 +1235,7 @@ ash/worried: What if nobody comes? What if I open the door and it's just me and 
 }
 - (menu)
 * {phase == "afternoon"} [Ask about his knees]
-    tobin/sad: Loose cobblestone by the fountain. Went down in front of everyone this morning. Took a whole string of bunting with me.
+    tobin/embarrassed: Loose cobblestone by the fountain. Went down in front of everyone this morning. Took a whole string of bunting with me.
     tobin/laugh: I've been laughing about it all day, so nobody else gets to first.
     ~ tobin_fall = true
     ** [Laugh with him]
@@ -1279,7 +1279,7 @@ ash/worried: What if nobody comes? What if I open the door and it's just me and 
 * {phase == "day2" && task == "" && not sort_ask} [Ask if he needs anything]
     -> sort_ask ->
 * {phase == "day2"} [Ask how he's doing]
-    tobin/worried: Honestly? Pip's been telling everyone about my fall. With actions. It's a whole show now.
+    tobin/embarrassed: Honestly? Pip's been telling everyone about my fall. With actions. It's a whole show now.
     ** {hide_count > 0} ["I hid in the hollow all night, after mine."]
         ~ tobin_shared = true
         tobin/surprised: You did? Huh.
@@ -1350,7 +1350,7 @@ tobin: Mind the stone.
 * {phase == "day2" && rest_ok && not told} [Tell Mara you're taking the afternoon]
     -> tell_mara ->
 * {phase == "day2"} [Ask how she's holding up]
-    mara/worried: Fine. Great. I've slept four hours since Tuesday.
+    mara/tired: Fine. Great. I've slept four hours since Tuesday.
     ** {rest_ok} ["I'm going to rest this afternoon. Maybe you could, too."]
         ~ mara_rests = true
         mara: ...An hour. Maybe. If Tobin watches the list.
@@ -1361,7 +1361,7 @@ tobin: Mind the stone.
         She nods back, already looking at the list.
     --
 * {phase == "after_storm"} [Talk about the storm]
-    mara/worried: I froze. Everything was flying and I just stood there.
+    mara/scared: I froze. Everything was flying and I just stood there.
     ** ["You came back, though."]
         mara/smile: We both did.
     ** ["Me too, at first."]
@@ -1481,7 +1481,7 @@ oda: Take a roll for the road.
 * {phase == "festival"} [Look at the red lantern]
     -> kids_evening ->
 * {phase == "festival"} [Ask Pip if she's tired yet]
-    pip: I'm not even tired.
+    pip/tired: I'm not even tired.
     juno: She's yawning.
     pip/laugh: I'm yawning ON PURPOSE.
 * {phase == "day2"} [Ask what they're playing]

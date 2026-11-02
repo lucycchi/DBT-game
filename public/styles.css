@@ -314,3 +314,31 @@ body.touch kbd { display: none; }
   .choice { padding: 0.45em 0.8em; }
 }
 @keyframes drop { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* Portraits: talking frames and the movement that goes with each feeling */
+.portrait .fr { display: none; }
+.portrait[data-frame="closed"] .fr-closed, .portrait[data-frame="open"] .fr-open, .portrait[data-frame="blink"] .fr-blink { display: inline; }
+.portrait .mot { transform-box: fill-box; transform-origin: 50% 100%; }
+.portrait .m-breathe { animation: p-breathe 3.2s ease-in-out infinite; }
+.portrait .m-bounce { animation: p-bounce .9s ease-in-out 3; }
+.portrait .m-laugh { animation: p-laugh .36s ease-in-out 5; }
+.portrait .m-sink { animation: p-sink .8s ease-out forwards; }
+.portrait .m-stomp { animation: p-stomp .5s steps(2) 4; }
+.portrait .m-hop { animation: p-hop 1s ease-out 2; }
+.portrait .m-shiver { animation: p-shiver .14s linear infinite; }
+.portrait .m-sway { animation: p-sway 2.2s ease-in-out infinite; }
+.portrait .m-shrink { animation: p-shrink .6s ease-out forwards; }
+.portrait .m-droop { animation: p-droop 1s ease-out forwards; }
+@keyframes p-breathe { 50% { transform: scaleY(1.02); } }
+@keyframes p-bounce { 40% { transform: translateY(-4px); } }
+@keyframes p-laugh { 50% { transform: rotate(-3deg) translateY(-1px); } }
+@keyframes p-sink { to { transform: translateY(2px) scaleY(.96); } }
+@keyframes p-stomp { 50% { transform: translateX(1.5px); } }
+@keyframes p-hop { 15% { transform: translateY(-6px); } 30% { transform: none; } }
+@keyframes p-shiver { 50% { transform: translateX(.8px); } }
+@keyframes p-sway { 25% { transform: rotate(-2deg); } 75% { transform: rotate(2deg); } }
+@keyframes p-shrink { to { transform: scale(.95, .9); } }
+@keyframes p-droop { to { transform: rotate(3deg) translateY(1px); } }
+@media (prefers-reduced-motion: reduce) { .portrait .mot { animation: none !important; } }
+/* Plain choices while walking sit bottom-left, clear of the action button. */
+#dialogue[data-mode="roam"] { left: max(1.4cqw, env(safe-area-inset-left, 0px)); transform: none; animation: none; max-width: 46cqw; }

@@ -4,7 +4,8 @@
 import type { StoryChoice } from "../engine";
 import { CAST, type SpokenLine } from "../logic/cast";
 import type { Sound } from "../audio/sound";
-import { drawPortrait } from "./characters";
+import type { CharacterId } from "../logic/cast";
+import { portraitSVG } from "./plush";
 
 const VOICE: Record<string, number> = { you: 1, mara: 1.15, tobin: 0.85, wren: 0.95, oda: 0.8, pip: 1.45, juno: 1.35, nell: 0.75, ash: 1.0 };
 const ADVANCE_KEYS = new Set([" ", "Enter", "e", "E"]);
@@ -19,7 +20,10 @@ export interface DialogueBox {
   readonly open: boolean;
 }
 
-export function createDialogueBox(root: HTMLElement, sound: Sound, reducedMotion: boolean): DialogueBox {
+/** Called as a speaker's mouth opens and closes with their words. */
+export type MouthHandler = (speaker: CharacterId, open: boolean) => void;
+
+export function createDialogueBox(root: HTMLElement, sound: Sound, reducedMotion: boolean, onMouth: MouthHandler = () => {}): DialogueBox {
   root.innerHTML = `<div class="dlg-portrait"></div><div class="dlg-body"><span class="dlg-name"></span><p class="dlg-text"></p><div class="dlg-choices"></div><span class="dlg-next" aria-hidden="true">▼</span></div>`;
   const portrait = root.querySelector<HTMLElement>(".dlg-portrait")!;
   const name = root.querySelector<HTMLElement>(".dlg-name")!;
@@ -64,7 +68,8 @@ export function createDialogueBox(root: HTMLElement, sound: Sound, reducedMotion
       choicesEl.replaceChildren();
       portrait.replaceChildren();
       if (spoken) {
-        portrait.appendChild(drawPortrait(spoken.speaker, spoken.expression ?? "neutral"));
+        // Trusted markup from our own renderer (no story or user text inside).
+        portrait.innerHTML = portraitSVG(spoken.speaker, spoken.expression ?? "neutral");
         name.textContent = CAST[spoken.speaker].name;
         root.classList.toggle("is-you", spoken.speaker === "you");
       } else {
@@ -78,8 +83,15 @@ export function createDialogueBox(root: HTMLElement, sound: Sound, reducedMotion
         let i = 0;
         let timer: number | undefined;
         const pitch = spoken ? VOICE[spoken.speaker] ?? 1 : 0;
+        const face = portrait.querySelector<SVGSVGElement>("svg");
+        const mouth = (open: boolean) => {
+          if (!spoken) return;
+          if (face) face.dataset.frame = open ? "open" : "closed";
+          onMouth(spoken.speaker, open);
+        };
         const finishTyping = () => {
           window.clearInterval(timer);
+          mouth(false);
           text.textContent = line;
           i = line.length;
           root.classList.add("done");
@@ -95,6 +107,8 @@ export function createDialogueBox(root: HTMLElement, sound: Sound, reducedMotion
           i += 1;
           text.textContent = line.slice(0, i);
           if (spoken && i % 3 === 0 && /\w/.test(line[i] ?? "")) sound.play("blip", { pitch });
+          // The mouth flaps every few letters and closes at spaces and punctuation.
+          if (spoken && i % 3 === 0) mouth(/\w/.test(line[i] ?? "") && !(face?.dataset.frame === "open"));
           if (i >= line.length) finishTyping();
         }, 22);
       });

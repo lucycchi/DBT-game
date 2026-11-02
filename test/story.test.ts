@@ -135,7 +135,7 @@ describe("story: stay, the feeling doesn't fit, all the way back", () => {
   });
 
   it("parses dialogue and gives speakers their expressions", () => {
-    const tobin = run.lines.find((l) => l.spoken?.speaker === "tobin" && l.spoken.expression === "sad");
+    const tobin = run.lines.find((l) => l.spoken?.speaker === "tobin" && l.spoken.expression === "embarrassed");
     expect(tobin?.text).toMatch(/Loose cobblestone/);
   });
 });

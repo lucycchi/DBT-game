@@ -23,15 +23,27 @@ export function talkGroup(id: CharacterId): CharacterId[] {
   return GROUPS[id] ?? [];
 }
 
-export const EXPRESSIONS = ["neutral", "smile", "laugh", "worried", "sad", "surprised", "warm"] as const;
+/** The feelings a face can show. "neutral" is each villager's own calm face. */
+export const EXPRESSIONS = [
+  "neutral", "happy", "laughing", "warm", "surprised", "worried", "sad", "upset", "scared", "embarrassed", "tired",
+] as const;
 export type Expression = (typeof EXPRESSIONS)[number];
+
+/** Older names still used in the story. */
+const ALIASES: Record<string, Expression> = { smile: "happy", laugh: "laughing", calm: "neutral" };
+
+/** An expression by name or alias, or null if unknown. */
+export function toExpression(name: string): Expression | null {
+  if ((EXPRESSIONS as readonly string[]).includes(name)) return name as Expression;
+  return ALIASES[name] ?? null;
+}
 
 export function isCharacterId(id: string): id is CharacterId {
   return id in CAST;
 }
 
-export function isExpression(e: string): e is Expression {
-  return (EXPRESSIONS as readonly string[]).includes(e);
+export function isExpression(e: string): boolean {
+  return toExpression(e) !== null;
 }
 
 export interface SpokenLine {
@@ -49,6 +61,7 @@ export function parseSpoken(line: string): SpokenLine | null {
   if (!match) return null;
   const [, id, expr, text] = match;
   if (!isCharacterId(id)) return null;
-  if (expr !== undefined && !isExpression(expr)) throw new Error(`Unknown expression "${expr}" in: ${line}`);
-  return { speaker: id, expression: (expr as Expression | undefined) ?? null, text };
+  const expression = expr === undefined ? null : toExpression(expr);
+  if (expr !== undefined && !expression) throw new Error(`Unknown expression "${expr}" in: ${line}`);
+  return { speaker: id, expression, text };
 }

@@ -2,6 +2,21 @@
 
 Everyone in the village has their own worries. Nobody exists to teach the player a lesson.
 
+## How they look
+
+Round, plush animals (`src/ui/plush.ts`): You are a red panda, Mara a deer, Tobin an otter,
+Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. Each
+has their own face (eyes, brows, mouth, head shape) that fits who they are, and keeps their
+outfit colors and props (Mara's clipboard and scarf, Tobin's cap and apron, Wren's baker's
+hat, Nell's shawl, cane and flower, Ash's glasses).
+
+**Feelings.** Eleven, each changing eyes, brows, mouth and cheeks, adding a small sign by the
+head, and moving the body: calm (breathing), happy (sparkles, a bounce), laughing (a wobble),
+warm, surprised ("!", a hop), worried (a sweat drop, a sway), sad (a tear, a sink), upset (a
+puff of steam, a stomp), scared (a sweat drop, a shiver), embarrassed (blush lines, eyes down,
+shrinking smaller), tired ("zzz", a droop). While someone speaks, their mouth opens and closes
+with the words, in the village and in their portrait; everyone blinks.
+
 ## Rules for writing dialogue
 
 - **No lectures:** no character explains a skill or tells the player what they should have done.
@@ -9,8 +24,9 @@ Everyone in the village has their own worries. Nobody exists to teach the player
   off. Nobody blames or shames the player.
 - **Characters notice different things:** most of them missed the fall entirely. That is what the
   facts are made of.
-- **Speaking lines** are written in Ink as `id: text` or `id/expression: text`. Expressions:
-  `neutral`, `smile`, `laugh`, `worried`, `sad`, `surprised`, `warm`.
+- **Speaking lines** are written in Ink as `id: text` or `id/feeling: text`. Feelings:
+  `neutral`, `happy`, `laughing`, `warm`, `surprised`, `worried`, `sad`, `upset`, `scared`,
+  `embarrassed`, `tired` (the older `smile` and `laugh` still work).
 
 ## The square
 

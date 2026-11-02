@@ -86,6 +86,12 @@ before playtesting with real players. Each points to where it lives.
     somewhere to go"), presented as her own way of coping. Are these safe and well framed?
     (`talk_nell`, `nell_door_story`, `talk_kids` in `story/festival.ink`; CHARACTERS.md)
 
-15. **Safety.** The title screen says the game is not therapy or a crisis resource and points
+15. **How feelings show on faces.** Each feeling adds a small sign and a body movement. The
+    ones to check: sad shows a tear and the body sinks; embarrassed shows blush lines, eyes
+    looking down and the body shrinking smaller (the player's own face during the fall and the
+    shame haze); scared shows a sweat drop and a shiver. Do these read as gentle and
+    recognizable rather than comic? (`FEELINGS` in `src/ui/plush.ts`)
+
+16. **Safety.** The title screen says the game is not therapy or a crisis resource and points
    to emergency services and 988 (US). No crisis detection or in-game handling exists.
    DESIGN.md lists crisis handling as an open decision.

@@ -3,7 +3,7 @@
 
 import type { GameEvent } from "./tags";
 import type { Completeness } from "./outcome";
-import { isCharacterId, isExpression, type CharacterId, type Expression } from "./cast";
+import { isCharacterId, toExpression, type CharacterId, type Expression } from "./cast";
 import { isHotspotId, type HotspotId } from "./facts";
 
 export const LANTERN_COUNT = 12;
@@ -159,8 +159,9 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
       return { ...w, posture: ev.arg === "up" ? "upright" : "slumped", faceHot: ev.arg !== "up" };
     case "face": {
       // arg is "id:expression", e.g. "mara:sad"
-      const [id, expr] = (ev.arg ?? "").split(":");
-      if (!isCharacterId(id) || !isExpression(expr)) throw new Error(`Bad face: ${ev.arg}`);
+      const [id, name] = (ev.arg ?? "").split(":");
+      const expr = toExpression(name ?? "");
+      if (!isCharacterId(id) || !expr) throw new Error(`Bad face: ${ev.arg}`);
       return { ...w, faces: { ...w.faces, [id]: expr } };
     }
     case "hang": {
