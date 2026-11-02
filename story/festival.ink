@@ -869,7 +869,7 @@ You set the trays down by the fountain. They were heavier than they looked. #eve
 === bunting_done ===
 ~ task = ""
 ~ tasks_done++
-You climb the ladder and unhook the bunting, one flag at a time. Your arms ache by the last one. #event: tire
+You climb the ladder and unhook the bunting, one flag at a time. Your arms ache by the last one. #event: tire #event: prop on:bunting_down
 -> body_notice ->
 ->->
 

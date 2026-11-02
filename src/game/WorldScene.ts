@@ -355,7 +355,7 @@ export class WorldScene extends Phaser.Scene {
     if (!storm && this.rain.emitting) this.rain.stop();
     this.updateSnowfall();
     for (const [id, img] of this.areaImages) img.setTexture(w.weather === "snow" && SNOWY_AREAS.has(id) ? `area-${id}-snow` : `area-${id}`);
-    for (const [name, img] of this.props) img.setVisible(w.props.includes(name));
+    for (const [name, img] of this.props) img.setVisible(PROPS[name].shown ? PROPS[name].shown!(w) : w.props.includes(name));
 
     // Lanterns: on the table, in your arms, on the ground, or on the string.
     this.tablePile.setVisible(w.lanterns === "workshop");

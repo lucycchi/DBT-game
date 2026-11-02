@@ -180,7 +180,9 @@ export const PLAYER_SPOTS: Record<WorldState["location"], number> = {
  * what you see matches what's said. `y` is where the image's bottom sits, unless `center` is set.
  * Images are `prop-<name>` textures from art.ts. `glow` lights up the dark around it.
  */
-export const PROPS: Record<string, { x: number; y: number; center?: boolean; glow?: number; depth?: number }> = {
+export const PROPS: Record<string, { x: number; y: number; center?: boolean; glow?: number; depth?: number; shown?: (w: WorldState) => boolean }> = {
+  // Market Street's bunting: up until you take it down in chapter two; gone by winter.
+  street_bunting: { x: 1550, y: GROUND_Y, shown: (w) => !w.props.includes("bunting_down") && w.weather !== "snow" && w.level <= 2, depth: -9 },
   // Chapter four
   sign_down: { x: 8880, y: GROUND_Y },
   sign_up: { x: 8950, y: GROUND_Y - 215, center: true },

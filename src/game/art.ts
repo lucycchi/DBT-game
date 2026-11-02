@@ -176,16 +176,29 @@ function sign(x: number, y: number, text: string, snowy = false) {
   return s;
 }
 
-function bunting(x0: number, x1: number, y: number, sag: number) {
-  let s = `<path d="M${x0} ${y} Q${(x0 + x1) / 2} ${y + sag * 2} ${x1} ${y}" fill="none" stroke="#8a6a52" stroke-width="2.5"/>`;
-  const n = Math.floor((x1 - x0) / 46);
+/** A string of flags tied between two points (eaves, posts), each end on a little hook. */
+function bunting(x0: number, y0: number, x1: number, y1: number, sag: number) {
+  const mx = (x0 + x1) / 2;
+  const my = (y0 + y1) / 2 + sag * 2;
+  let s = `<path d="M${x0} ${y0} Q${mx} ${my} ${x1} ${y1}" fill="none" stroke="#8a6a52" stroke-width="2.5"/>`;
+  for (const [hx, hy] of [[x0, y0], [x1, y1]]) s += `<circle cx="${hx}" cy="${hy}" r="4.5" fill="#7a5a44"/>`;
+  const n = Math.max(2, Math.floor((x1 - x0) / 34));
   for (let i = 1; i < n; i++) {
     const t = i / n;
-    const x = x0 + (x1 - x0) * t;
-    const yy = y + 4 * sag * t * (1 - t);
-    s += `<path d="M${f(x - 12)} ${f(yy)} L${f(x + 12)} ${f(yy)} L${f(x)} ${f(yy + 24)} Z" fill="${FLAGS[i % FLAGS.length]}"/>`;
+    // A point on the same curve as the string, so every flag hangs from it.
+    const x = (1 - t) ** 2 * x0 + 2 * (1 - t) * t * mx + t * t * x1;
+    const yy = (1 - t) ** 2 * y0 + 2 * (1 - t) * t * my + t * t * y1;
+    s += `<path d="M${f(x - 10)} ${f(yy)} L${f(x + 10)} ${f(yy)} L${f(x)} ${f(yy + 20)} Z" fill="${FLAGS[i % FLAGS.length]}"/>`;
   }
   return s;
+}
+
+/** Market Street's bunting, tied between the shops' eaves. Taken down in chapter two. */
+function streetBuntingSVG(): string {
+  const y = GROUND_Y;
+  // Bakery's right eave to the workshop's left eave, and the workshop's right eave to the townhouse.
+  const s = bunting(352, y - 196, 456, y - 204, 10) + bunting(744, y - 204, 846, y - 218, 10);
+  return wrap(1000, 400, `<g transform="translate(0 ${400 - GROUND_Y})">${s}</g>`);
 }
 
 /** Rows of soft cobbles from just below the ground line down to the bottom. */
@@ -308,9 +321,10 @@ function gableCottage(c: Ctx, x: number, w: number, h: number, wall: string, roo
 
 function townhouse(c: Ctx, x: number, w: number, h: number, wall: string, roofCol: string) {
   const t = GROUND_Y - h;
-  let s = roof(c, `M${x - 10} ${t + 6} C${x - 6} ${t - 50} ${f(x + w * 0.2)} ${t - 60} ${x + w / 2} ${t - 74} C${f(x + w * 0.8)} ${t - 60} ${x + w + 6} ${t - 50} ${x + w + 10} ${t + 6} Z`, roofCol);
+  // Walls first, then the roof over them, so the eaves sit in front of the wall.
+  let s = `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="8" fill="${wall}"/>`;
+  s += roof(c, `M${x - 10} ${t + 6} C${x - 6} ${t - 50} ${f(x + w * 0.2)} ${t - 60} ${x + w / 2} ${t - 74} C${f(x + w * 0.8)} ${t - 60} ${x + w + 6} ${t - 50} ${x + w + 10} ${t + 6} Z`, roofCol);
   s += `<path d="M${x + w / 2} ${t - 74} V${t - 110}" stroke="#7a5a44" stroke-width="3"/><path d="M${x + w / 2} ${t - 110} l26 8 l-26 8 Z" fill="#f6d36a"/>`;
-  s += `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="8" fill="${wall}"/>`;
   if (c.snow) s += icicles(x - 6, x + w + 6, t + 4, x + 1);
   for (let i = 0; i < 7; i++) s += `<rect x="${f(x + 10 + ((i * 37) % (w - 30)))}" y="${f(t + 20 + i * 26)}" width="16" height="7" rx="3" fill="#000" opacity=".06"/>`;
   s += archWindow(c, x + w / 2 - 15, t - 46, 30, 40);
@@ -321,12 +335,12 @@ function townhouse(c: Ctx, x: number, w: number, h: number, wall: string, roofCo
 function bakery(c: Ctx, x: number, w: number, h: number, wall: string, roofCol: string) {
   const t = GROUND_Y - h;
   let s = chimney(c, x + w * 0.75, t - 70, 24, 56);
+  s += `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="12" fill="${wall}"/>`;
   s += roof(c, `M${x - 12} ${t + 8} Q${x - 12} ${t - 62} ${x + w / 2} ${t - 64} Q${x + w + 12} ${t - 62} ${x + w + 12} ${t + 8} Z`, roofCol, 0, 13);
   for (let i = 1; i < 6; i++) {
     const rx = x - 12 + (i * (w + 24)) / 6;
     s += `<path d="M${f(rx)} ${t + 6} Q${f(rx)} ${t - 40} ${f(rx + (i - 3) * 6)} ${t - 56}" stroke="#ffffff" stroke-opacity=".22" stroke-width="5" fill="none"/>`;
   }
-  s += `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="12" fill="${wall}"/>`;
   if (c.snow) s += icicles(x - 8, x + w + 8, t + 6, x + 2);
   s += `<rect x="${x + w / 2 - 64}" y="${t + 14}" width="128" height="32" rx="16" fill="#a8674a"/><text x="${x + w / 2}" y="${t + 36}" text-anchor="middle" font-family="${FONT}" font-weight="bold" font-size="18" fill="#fff6e6" letter-spacing="1">BAKERY</text>`;
   if (c.snow) s += ledgeSnow(x + w / 2 - 56, t + 17, 112, 7);
@@ -345,8 +359,8 @@ function turretCottage(c: Ctx, x: number, w: number, h: number, wall: string, ro
   const tx = x + w - 62;
   const tw = 74;
   const tt = t - 60;
-  let s = roof(c, `M${x - 14} ${t + 10} L${x + 30} ${t - 52} L${tx - 10} ${t - 52} L${tx + 10} ${t + 10} Z`, roofCol, 14);
-  s += `<rect x="${x}" y="${t}" width="${tx - x + 10}" height="${h + 14}" rx="14" fill="${wall}"/>`;
+  let s = `<rect x="${x}" y="${t}" width="${tx - x + 10}" height="${h + 14}" rx="14" fill="${wall}"/>`;
+  s += roof(c, `M${x - 14} ${t + 10} L${x + 30} ${t - 52} L${tx - 10} ${t - 52} L${tx + 10} ${t + 10} Z`, roofCol, 14);
   if (c.snow) s += icicles(x - 18, tx, t + 16, x + 4);
   s += `<rect x="${tx}" y="${tt}" width="${tw}" height="${GROUND_Y - tt + 14}" rx="${tw / 2}" fill="${wall}"/><rect x="${tx}" y="${tt + 30}" width="${tw}" height="${GROUND_Y - tt - 16}" fill="${wall}"/>`;
   s += roof(c, `M${tx - 10} ${tt + 12} L${tx + tw / 2} ${tt - 70} L${tx + tw + 10} ${tt + 12} Z`, "#7a9fd0", 10, 9);
@@ -359,12 +373,12 @@ function turretCottage(c: Ctx, x: number, w: number, h: number, wall: string, ro
 
 function porchHouse(c: Ctx, x: number, w: number, h: number, wall: string, roofCol: string) {
   const t = GROUND_Y - h;
-  let s = roof(c, `M${x - 16} ${t + 10} L${f(x + w * 0.22)} ${t - 60} L${f(x + w * 0.78)} ${t - 60} L${x + w + 16} ${t + 10} Z`, roofCol, 14);
+  let s = chimney(c, x + w * 0.2, t - 90, 18, 40);
+  s += `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="12" fill="${wall}"/>`;
+  s += roof(c, `M${x - 16} ${t + 10} L${f(x + w * 0.22)} ${t - 60} L${f(x + w * 0.78)} ${t - 60} L${x + w + 16} ${t + 10} Z`, roofCol, 14);
   s += `<rect x="${f(x + w * 0.38)}" y="${t - 52}" width="${f(w * 0.24)}" height="40" rx="6" fill="${wall}"/>`;
   s += roof(c, `M${f(x + w * 0.35)} ${t - 48} L${f(x + w * 0.5)} ${t - 74} L${f(x + w * 0.65)} ${t - 48} Z`, roofCol, 8, 8);
   s += sqWindow(c, x + w * 0.5 - 14, t - 46, 28, 28);
-  s += chimney(c, x + w * 0.2, t - 90, 18, 40);
-  s += `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="12" fill="${wall}"/>`;
   if (c.snow) s += icicles(x - 20, x + w + 20, t + 16, x + 6);
   for (let yy = t + 14; yy < GROUND_Y - 6; yy += 16) s += `<path d="M${x + 6} ${yy} H${x + w - 6}" stroke="#000" stroke-opacity=".05" stroke-width="2"/>`;
   s += sqWindow(c, x + 22, t + 30, 46, 40, "#c97b6a") + sqWindow(c, x + w - 68, t + 30, 46, 40, "#c97b6a");
@@ -378,8 +392,8 @@ function porchHouse(c: Ctx, x: number, w: number, h: number, wall: string, roofC
 /** The lantern workshop: a wide shop with a big arched double door and a lantern sign. */
 function workshopFront(c: Ctx, x: number, w: number, h: number, wall: string, roofCol: string, door: number) {
   const t = GROUND_Y - h;
-  let s = roof(c, `M${x - 18} ${t + 10} L${x + w / 2} ${f(t - w * 0.32)} L${x + w + 18} ${t + 10} Z`, roofCol, 18);
-  s += `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="14" fill="${wall}"/>`;
+  let s = `<rect x="${x}" y="${t}" width="${w}" height="${h + 14}" rx="14" fill="${wall}"/>`;
+  s += roof(c, `M${x - 18} ${t + 10} L${x + w / 2} ${f(t - w * 0.32)} L${x + w + 18} ${t + 10} Z`, roofCol, 18);
   if (c.snow) s += icicles(x - 24, x + w + 24, t + 18, x + 8);
   s += `<path d="M${x + 6} ${t + 8} V${GROUND_Y} M${x + w - 6} ${t + 8} V${GROUND_Y}" stroke="#d8b48a" stroke-width="10" stroke-linecap="round"/>`;
   s += archWindow(c, x + 34, t + 44, 46, 64) + archWindow(c, x + w - 80, t + 44, 46, 64);
@@ -422,7 +436,6 @@ function streetSVG(a: Area, snowy = false): string {
   // The workshop door is at world x 1650 (local 600).
   s += workshopFront(c, 470, 260, 210, "#fde6a8", "#b986c9", 600);
   s += townhouse(c, 850, 130, 220, "#e3ecf7", "#e57b5f");
-  if (!snowy) s += bunting(0, 460, GROUND_Y - 330, 28) + bunting(460, 1000, GROUND_Y - 320, 24);
   s += lamppost(c, 380) + lamppost(c, 810);
   s += ground(c, w, 29, false);
   return wrap(w, VIEW_H, s);
@@ -1635,6 +1648,7 @@ export function allTextures(): TextureSpec[] {
   specs.push({ key: "teacart", svg: teaCartSVG() });
   specs.push({ key: "bubble", svg: bubbleSVG() });
   specs.push({ key: "sparkle", svg: sparkleSVG() });
+  specs.push({ key: "prop-street_bunting", svg: streetBuntingSVG() });
   for (const name of Object.keys(PROPS)) specs.push({ key: `prop-${name}`, svg: propSVG(name) });
   for (const item of SHED_ITEMS) specs.push({ key: `shed-item-${item.id}`, svg: shedItemSVG(item.id) });
   specs.push({ key: "waterwheel", svg: waterwheelSVG() });

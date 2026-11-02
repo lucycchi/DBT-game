@@ -371,6 +371,12 @@ export interface DrawOptions {
   marks?: boolean;
   /** An arm pointing forward, for the shame haze. */
   pointing?: boolean;
+  /** Walking: -1..1, which foot is lifted (left when negative) and how far. */
+  step?: number;
+  /** Turned toward the direction of travel (+x), 0 facing the camera to 1 three-quarters. */
+  turn?: number;
+  /** Arms swing against the legs while walking. */
+  swing?: boolean;
 }
 
 /** SVG markup for a villager (no outer <svg>), feet at (0, 0), already scaled to their size. */
@@ -389,10 +395,18 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
   let s = "";
 
   s += `<ellipse cx="0" cy="1" rx="${f(bw * 0.62)}" ry="4" fill="#3b2a1e" opacity=".18"/>`;
-  s += tailSVG(sp, bw, top, bot, k);
+  // Turned toward +x, the tail trails out behind (-x).
+  s += (opts.turn ?? 0) > 0 ? `<g transform="scale(-1 1)">${tailSVG(sp, bw, top, bot, k)}</g>` : tailSVG(sp, bw, top, bot, k);
   const lw = bw * 0.28;
   const lx = bw * 0.2;
-  for (const d of [-1, 1]) s += `<rect x="${f(d * lx - lw / 2)}" y="${f(bot - 4)}" width="${f(lw)}" height="${f(S.legH + 4)}" rx="${f(lw / 2)}" fill="${sp.feet}"/>`;
+  const step = opts.step ?? 0;
+  const turn = opts.turn ?? 0;
+  for (const d of [-1, 1]) {
+    // While walking, one foot lifts at a time; turned, the lifted foot also reaches forward.
+    const lift = (d < 0 ? Math.max(0, -step) : Math.max(0, step)) * 4;
+    const reach = (d < 0 ? -step : step) * 3 * turn;
+    s += `<rect x="${f(d * lx - lw / 2 + reach)}" y="${f(bot - 4 - lift)}" width="${f(lw)}" height="${f(S.legH + 4)}" rx="${f(lw / 2)}" fill="${sp.feet}"/>`;
+  }
   s += bodyShape(bw, top, bh, look.outfit);
   if (has("apron")) s += `<rect x="${f(-bw * 0.3)}" y="${f(top + bh * 0.28)}" width="${f(bw * 0.6)}" height="${f(bh * 0.72)}" rx="${f(bw * 0.08)}" fill="${look.accent}"/>`;
   if (has("satchel")) {
@@ -436,8 +450,10 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
       s += `<circle cx="${f(px)}" cy="${f(py)}" r="${f(arx * 0.92)}" fill="${paw}"/>`;
       continue;
     }
-    s += `<ellipse cx="${f(ax)}" cy="${f(ay)}" rx="${f(arx)}" ry="${f(ary)}" fill="${look.outfit}"/>`;
-    s += `<circle cx="${f(ax)}" cy="${f(ay + ary - arx * 0.4)}" r="${f(arx * 0.92)}" fill="${paw}"/>`;
+    // Arms swing opposite the legs: a small tilt about the shoulder.
+    const swing = opts.swing ? (d < 0 ? step : -step) * 14 : 0;
+    const arm = `<ellipse cx="${f(ax)}" cy="${f(ay)}" rx="${f(arx)}" ry="${f(ary)}" fill="${look.outfit}"/><circle cx="${f(ax)}" cy="${f(ay + ary - arx * 0.4)}" r="${f(arx * 0.92)}" fill="${paw}"/>`;
+    s += swing ? `<g transform="rotate(${f(swing)} ${f(ax)} ${f(ay - ary * 0.8)})">${arm}</g>` : arm;
   }
   if (has("clipboard")) s += `<rect x="${f(-bw / 2 - 9 * k)}" y="${f(ay + ary * 0.1)}" width="${f(11 * k)}" height="${f(14 * k)}" rx="1.5" fill="#c99a5e"/><rect x="${f(-bw / 2 - 7.5 * k)}" y="${f(ay + ary * 0.1 + 2.5 * k)}" width="${f(8 * k)}" height="${f(10 * k)}" fill="#fffaf0"/>`;
   if (has("shawl")) s += `<path d="M${f(-bw * 0.5)} ${f(top + 2)} Q0 ${f(top - 3)} ${f(bw * 0.5)} ${f(top + 2)} L${f(bw * 0.12)} ${f(top + bh * 0.6)} Q0 ${f(top + bh * 0.66)} ${f(-bw * 0.12)} ${f(top + bh * 0.6)} Z" fill="${look.accent}"/>`;
@@ -482,6 +498,8 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
   } else {
     s += `<ellipse cx="0" cy="${f(hy)}" rx="${f(hw)}" ry="${f(hh)}" fill="${sp.fur}"/>`;
   }
+  // Everything on the face moves toward where they're walking when turned.
+  const faceStart = s.length;
   if (sp.pattern === "redpanda" || sp.pattern === "badger") {
     for (const d of [-1, 1]) s += `<ellipse cx="${f(d * R * 0.48)}" cy="${f(hy + R * 0.36)}" rx="${f(R * 0.42)}" ry="${f(R * 0.32)}" fill="${sp.fur2}"/>`;
   }
@@ -506,6 +524,7 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
     if (face.bags) s += `<path d="M${f(d * ex - R * 0.11)} ${f(ey + R * 0.15)} Q${f(d * ex)} ${f(ey + R * 0.22)} ${f(d * ex + R * 0.11)} ${f(ey + R * 0.15)}" fill="none" stroke="#8a6f86" stroke-width="${f(R * 0.035)}" stroke-linecap="round" opacity=".55"/>`;
     if (face.brow) s += browSVG(face.brow, d, d * ex, ey, R, face.bushy);
   }
+  if (turn) s = s.slice(0, faceStart) + `<g transform="translate(${f(turn * R * 0.3)} 0)">` + s.slice(faceStart) + `</g>`;
   // Soft highlights
   s += `<ellipse cx="${f(-R * 0.32)}" cy="${f(hy - R * 0.48)}" rx="${f(R * 0.4)}" ry="${f(R * 0.22)}" fill="#ffffff" opacity=".25"/>`;
   s += `<ellipse cx="${f(-bw * 0.18)}" cy="${f(top + bh * 0.25)}" rx="${f(bw * 0.16)}" ry="${f(bh * 0.12)}" fill="#ffffff" opacity=".18"/>`;
