@@ -86,12 +86,161 @@ mirror the player's situation from the outside.
 
 | Who | Their story | What they remember |
 |---|---|---|
-| Tobin | Fell on the same stone that morning. Laughs first so nobody can laugh at him, a habit from his dad. In chapter two Pip is acting out his fall for everyone; you can tell him you wanted to vanish too. He fixes the stone. | Whether you laughed with him, were kind ("that sounds rough"), or said nothing; whether you told him about your own fall. |
-| Mara | Her grandmother started the festival 61 years ago with one lantern on her step. When things go quiet she assumes it's her fault. Overcommits; in chapter two, if you're resting, you can suggest she does too. Freezes in the storm. | Whether you heard about her grandmother; whether she took an hour off. |
-| Wren and Oda | Wren's back hurts and she won't say so; Oda knows. By the storm, Wren asks for help out loud. | Whether you noticed Wren's back; whether you carried the bread trays. |
-| Pip and Juno | Pip wants to stay up all night and is scared in the storm. Juno counts things (412 cobblestones, 73 flags) when it's loud: "It gives the noise somewhere to go." | Whether you helped Pip breathe; whether you know about Juno's counting. |
-| Nell | One winter, after losing her place at the mill, she didn't come out till spring. When she did, someone had painted her door yellow. Nobody owned up. | What you told her ("Not me. Not today."); whether you heard about the door. |
-| Ash | Wants to open a tea shop in the old mill office and is scared nobody will come. Signs the lease in chapter two, opens next week. | How you reacted (encouraged, joked, or asked what scared them). |
+| Tobin | Fell on the same stone that morning. Laughs first so nobody can laugh at him, a habit from his dad. In chapter two Pip is acting out his fall for everyone; you can tell him you wanted to vanish too. Hesketh has offered him the workshop and he hasn't answered; after the storm he says yes. He fixes the stone. | Whether you laughed with him, were kind ("that sounds rough"), or said nothing; whether you told him about your own fall; whether he told you about Hesketh's offer. |
+| Mara | Her grandmother Rosa started the festival 61 years ago with one lantern on her step. When things go quiet she assumes it's her fault. Overcommits; in chapter two, if you're resting, you can suggest she does too. Freezes in the storm. After it, she can open Rosa's box of notes with you and find out who the first lantern was for. | Whether you heard about her grandmother; whether she took an hour off; whether you opened the box together. |
+| Wren and Oda | Wren's back hurts and she won't say so; Oda knows, and has been secretly getting up an hour early for a year to do Wren's kneading. By the storm, Wren asks for help out loud. If you noticed Oda's tiredness, Wren finds out after the storm. | Whether you noticed Wren's back; whether you carried the bread trays; whether you noticed Oda's tiredness. |
+| Pip and Juno | Their mum works nights as a nurse, so the bakers mind them. Pip wants to stay up all night and is scared in the storm. Juno counts things (412 cobblestones, 73 flags) when it's loud: "It gives the noise somewhere to go." She started counting when their mum first went on nights. | Whether you helped Pip breathe; whether you know about Juno's counting. |
+| Nell | One winter, after losing her husband and then her place at the mill, she didn't come out till spring. When she did, someone had painted her door yellow. Nobody owned up. If you've heard her story and opened Rosa's box with Mara, you can tell her the first lantern was for her. | What you told her ("Not me. Not today."); whether you heard about the door; whether you told her what Rosa wrote. |
+| Ash | Wants to open a tea shop in the old mill office and is scared nobody will come. Signs the lease in chapter two, opens next week. Has known about your hollow since you were both ten. | How you reacted (encouraged, joked, or asked what scared them). |
+
+## Full backstories
+
+This is the background the dialogue is written from. Most of it never appears on screen; the
+parts that do are marked **On screen**. Write new lines so they could be true of the person
+below, and never use a backstory to explain a skill or to make the player feel they caused
+someone's trouble.
+
+### The village
+
+| Years ago | What happened |
+|---|---|
+| About 70 | Rosa and Nell, both girls, grow up across Lantern Lane from each other. |
+| 63 | Nell marries Wil. Both work at the mill. |
+| 61, autumn | Wil dies of a fever. In November the mill shuts and half the village loses its work. |
+| 61, winter | Nell stops coming out, and keeps her curtains closed. Rosa starts setting a lantern on her own step every night, where Nell's window can see it. Neighbors ask, then copy her: first the lane, then the square. That is the first festival. |
+| 60, April | Rosa paints Nell's door yellow while Nell is still inside. Neither of them ever mentions it. |
+| 40 | Hesketh opens the lantern workshop on Market Street, so the village can stop buying lanterns from the city. |
+| 25 | Oda's aunt Bet hands over the bakery. Wren arrives for one summer's work and stays. |
+| About 20 | You move to Lantern Lane at eight, know nobody, and find the hollow. Ash, staying with their gran, finds you there two years later. |
+| 20 | Wren and Oda marry. |
+| About 10 | You move away for some years. |
+| 6 | Tobin arrives at sixteen to apprentice with Hesketh. Ash takes over their gran's tea cart. |
+| 5 | Rosa dies. Mara, who has lived with her for years, takes over the festival. |
+| 2 | Hesketh retires to the coast, Tobin's home town. He writes long letters about glue. |
+| Last spring | You come back. Wren's back starts to hurt; Oda starts getting up at three. |
+| This week | The 62nd festival (Nell has watched 61 from her step, and this is the next). Mara asks you to carry the lanterns. |
+
+```mermaid
+flowchart LR
+  rosa["Rosa (gone five years)"] -- "first lantern, yellow door" --> nell[Nell]
+  rosa -- "grandmother" --> mara[Mara]
+  mara -- "the box of notes" --> rosa
+  you[You] -- "friends since you were ten" --- ash[Ash]
+  nell -- "watched you grow up" --> you
+  ash -- "shop in the old mill office" --> nell
+  tobin[Tobin] -- "apprentice" --> hesketh["Hesketh (on the coast)"]
+  oda[Oda] -- "married" --- wren[Wren]
+  wren -- "breakfast most mornings" --> kids[Pip and Juno]
+  kids -- "their mum works nights" --> mum["Mum (nurse in Haddon)"]
+  mara -- "asked you to carry the lanterns" --> you
+```
+
+### You (red panda)
+
+Kept loose on purpose, so any player can step in: no family details, no gender, no job.
+
+- **History:** moved to Lantern Lane at eight, the new one who knew nobody. Found the hollow
+  in the rocks the first month and went there whenever something went wrong. At ten, Ash
+  found you there, sat outside without saying much, and waited until the tea went cold. You
+  chipped Ash's gran's cup at twelve and cried for an hour.
+- **The years away:** you left for some years and came back last spring. This is your first
+  festival back. Carrying the lanterns is the first job anyone has given you since; it means
+  you belong here again, which is why dropping them lands so hard.
+- **What people know:** Nell has always known where you went (**On screen**, afternoon: "I
+  always knew where you'd gone"). Ash knows about the hollow and comes to it (**On screen**,
+  if you hid). Mara asked you because you came back (**On screen**, afternoon).
+
+### Mara (deer)
+
+- **Family:** Rosa's granddaughter. Spent summers in Rosa's house on Lantern Lane as a child
+  and moved in at twenty when Rosa needed help. Her mother lives in the city and visits at
+  New Year. Mara still lives in Rosa's house; the supper invitations are for there.
+- **The festival:** took it over at twenty-nine, when Rosa died. Rosa never used a list; Mara
+  has eleven. The lists are how she keeps the fear of doing it wrong somewhere she can see it.
+- **What she fears:** being the one who lets the festival fade. Underneath that: that people
+  were only ever kind to her because of Rosa. That's why her first guess, when anything goes
+  quiet, is that she caused it.
+- **What she wants:** one festival where nothing goes wrong. She finds out it never happened,
+  even for Rosa.
+- **The box:** a shoebox in the attic marked FESTIVAL, untouched for five years. Inside, sixty
+  years of pencil notes, almost all of them mistakes ("Year three. Forgot the candles. Used
+  turnips."). At the bottom, the oldest note: the first lantern was for Nell, and Rosa painted
+  her door. **On screen**, after the storm, if you heard how the festival started.
+- **Habits:** says "okay, okay" when stressed; walks the same loop of the square when
+  thinking; keeps Rosa's lantern on the top shelf, away from everything.
+
+### Tobin (otter)
+
+- **Family:** from a fishing town on the coast. His dad, Fen, jokes through everything,
+  including the years the boats came back empty. Tobin loves him, and is slowly working out
+  which jokes help and which ones hide things. His mum is quiet and sends knitted socks.
+- **The workshop:** came at sixteen to apprentice with Hesketh, who retired to the coast two
+  years ago and writes long letters about glue. Tobin made eleven of this year's lanterns;
+  the red one is the first he designed himself, and it's a little crooked (**On screen**,
+  main story). Hesketh has offered him the workshop for good. He hasn't answered in three
+  weeks, because an apprentice is allowed to get it wrong and an owner isn't. **On screen**:
+  he tells you at the festival, and says yes after the storm.
+- **What he fears:** being laughed at for really trying. So he laughs first.
+- **Habits:** twists wire while he talks; counts things for Juno so she doesn't have to;
+  says "Ha" after anything that matters.
+
+### Wren (goat) and Oda (badger)
+
+- **History:** the bakery was Oda's aunt Bet's. Wren came for one summer, twenty-five years
+  ago, as seasonal help. She burned the first batch, Oda laughed, and Wren stayed. Married
+  twenty years.
+- **Wren:** tall, quick, a worrier about bread and nothing else out loud. Her back has hurt
+  since last spring. She's afraid that slowing down means getting old, and that a slow bakery
+  is a bakery people stop coming to.
+- **Oda:** short, floury, unbothered. For a year she has been getting up at three instead of
+  four to do Wren's share of the kneading before Wren comes down, and has never said so,
+  because Wren would never have agreed. **On screen**: you notice she's tired in chapter two,
+  and Wren finds out after the storm. They decide to hire help, out loud.
+- **Pip and Juno:** the bakers give them breakfast most mornings and mind them during the
+  festival.
+
+### Pip and Juno (mice)
+
+- **Family:** their mum is a nurse at the infirmary in Haddon, the next town, and works
+  nights, so she sleeps in the day (**On screen**, chapter two). Nobody else in their family
+  is mentioned; don't add anyone.
+- **Juno (nine):** started counting things when their mum first went on nights, counting the
+  days to Saturday. Now she counts whenever it's loud: 412 cobblestones, 73 flags. She
+  corrects people kindly and is quietly in charge of Pip.
+- **Pip (seven):** has decided this is the year she's big enough to stay up all night. Named
+  Tobin's red lantern Strawberry ("It's a strawberry in its heart"). The storm is her first time
+  being really scared in front of everyone.
+
+### Nell (sheep)
+
+- **History:** eighty-four. Grew up across the lane from Rosa; they were girls together.
+  Married Wil at twenty-one; both worked at the mill. Wil died of a fever the autumn she was
+  twenty-three, and in November the mill shut. That winter she couldn't face anybody and
+  kept the curtains closed. She watched one light through them all winter: Rosa's lantern on
+  Rosa's step. She thought Rosa had just taken to sitting out.
+- **The door:** in April she opened the door and it was yellow. Nobody owned up. She has
+  told people it was losing the mill; it was never the mill. **On screen**: the door story in
+  the afternoon; if you open Rosa's box with Mara after the storm, you can tell Nell, and she
+  says this herself.
+- **Who she is now:** has watched every festival from her step, without knowing they began
+  for her. Dry, unhurried, notices everything. Doesn't give advice; tells stories where she
+  got it wrong. After hearing the truth, she plans to take Mara something yellow.
+- **Habits:** a flower in her shawl, always; counts festivals instead of birthdays.
+
+### Ash (bear)
+
+- **Family:** their parents run a tea company in the city with forty shops, and think the cart
+  is a phase (six years so far). Ash spent their school years in the village with their gran,
+  Mae, who ran the tea cart and taught you both to drink tea (**On screen**, festival).
+- **You:** best friends since you were ten, when Ash found you in the hollow and sat outside.
+  The chipped cup is the one you broke at twelve; Ash said it was their favorite so you'd stop
+  crying, and then it was (**On screen**, afternoon). That is why, if you hide, Ash knows
+  exactly where to go and what to do (**On screen**, the morning after you hide).
+- **The shop:** wants to turn the old mill office, where Nell used to work, into a real tea
+  shop with chairs. Signs the lease in chapter two; opens the week after the festival. Afraid
+  it will be "just okay".
+- **Who they are:** steady about other people's feelings and much less steady about their own;
+  only admits being scared if you ask. Pronouns: they/them.
 
 ## Passing remarks
 

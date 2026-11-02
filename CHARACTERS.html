@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Characters</title>
+<style>
+:root {
+  --background: #fbfaf7; --text: #1f2328; --muted: #59636e; --border: #d8dee4;
+  --panel: #f1efe9; --accent: #2f6f5e; --error-background: #fdecea; --error-text: #8a1c12;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #15181c; --text: #e6e8eb; --muted: #9aa4af; --border: #30363d;
+    --panel: #1e2328; --accent: #7cc4ad; --error-background: #3a1d1b; --error-text: #ffb4a9;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--background); color: var(--text);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 64px; }
+header { border-bottom: 2px solid var(--accent); margin-bottom: 24px; }
+h1 { margin: 0 0 4px; font-size: 1.9rem; }
+.stage { margin: 0 0 12px; color: var(--muted); }
+section { margin-top: 40px; }
+h2 { font-size: 1.4rem; border-bottom: 1px solid var(--border); padding-bottom: 4px; }
+h3 { font-size: 1.15rem; margin-top: 28px; }
+a { color: var(--accent); overflow-wrap: anywhere; }
+code { background: var(--panel); padding: 1px 4px; border-radius: 4px; font-size: 0.9em; }
+pre { background: var(--panel); padding: 12px; border-radius: 6px; overflow-x: auto; }
+pre code { padding: 0; background: none; }
+pre.mermaid { background: #ffffff; text-align: center; }
+table { display: block; overflow-x: auto; border-collapse: collapse; margin: 16px 0; }
+th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--panel); }
+li.task { list-style: none; margin-left: -1.3em; display: flex; gap: 8px; align-items: baseline; }
+li.task .box { flex: none; width: 1.1em; height: 1.1em; border: 2px solid var(--accent); border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: 700;
+  transform: translateY(0.15em); }
+li.task.done .box { background: var(--accent); color: var(--background); }
+.diagram-error { background: var(--error-background); color: var(--error-text);
+  border-left: 4px solid var(--error-text); padding: 12px; border-radius: 6px; }
+.diagram-error pre { background: transparent; color: inherit; padding: 8px 0 0; margin: 0; }
+@media print { pre, table, .diagram-error { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Characters</h1>
+<p>Everyone in the village has their own worries. Nobody exists to teach the player a lesson.</p>
+<h2>How they look</h2>
+<p>Round, plush animals (<code>src/ui/plush.ts</code>): You are a red panda, Mara a deer, Tobin an otter, Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. Each has their own face (eyes, brows, mouth, head shape) that fits who they are, and keeps their outfit colors and props (Mara's clipboard and scarf, Tobin's cap and apron, Wren's baker's hat, Nell's shawl, cane and flower, Ash's glasses).</p>
+<p><strong>Feelings.</strong> Eleven, each changing eyes, brows, mouth and cheeks, adding a small sign by the head, and moving the body: calm (breathing), happy (sparkles, a bounce), laughing (a wobble), warm, surprised ("!", a hop), worried (a sweat drop, a sway), sad (a tear, a sink), upset (a puff of steam, a stomp), scared (a sweat drop, a shiver), embarrassed (blush lines, eyes down, shrinking smaller), tired ("zzz", a droop). While someone speaks, their mouth opens and closes with the words, in the village and in their portrait; everyone blinks.</p>
+<h2>Rules for writing dialogue</h2>
+<ul>
+<li><strong>No lectures:</strong> no character explains a skill or tells the player what they should have done.</li>
+<li><strong>Costs come from people's own lives:</strong> Mara thinks <em>she</em> upset you; Tobin thinks his laugh drove you</li>
+</ul>
+<p>off. Nobody blames or shames the player.</p>
+<ul>
+<li><strong>Characters notice different things:</strong> most of them missed the fall entirely. That is what the</li>
+</ul>
+<p>facts are made of.</p>
+<ul>
+<li><strong>Speaking lines</strong> are written in Ink as <code>id: text</code> or <code>id/feeling: text</code>. Feelings:</li>
+</ul>
+<p><code>neutral</code>, <code>happy</code>, <code>laughing</code>, <code>warm</code>, <code>surprised</code>, <code>worried</code>, <code>sad</code>, <code>upset</code>, <code>scared</code>, <code>embarrassed</code>, <code>tired</code> (the older <code>smile</code> and <code>laugh</code> still work).</p>
+<h2>The square</h2>
+<p><strong>Mara</strong> (<code>mara</code>): runs the festival. Thirties, scarf, clipboard energy. Kind, organized, a worrier. When things go quiet she assumes she caused it, which is the player's pattern seen from the outside. Her grandmother started the festival, and her grandmother's paper lantern is the oldest thing Mara owns. Says "okay, okay" when stressed.</p>
+<p><strong>Tobin</strong> (<code>tobin</code>): the lantern-maker's apprentice, early twenties, cap and apron full of wire. Laughs when nervous or surprised, never to be cruel. He tripped on the same loose stone this morning, broke one of his own lanterns, and has been joking about it all day so nobody else can first. The one laugh the player hears is his.</p>
+<p><strong>Wren and Oda</strong> (<code>wren</code>, <code>oda</code>): the bakers, married, fifties. Wren (tall, baker's hat) frets that the bread won't be ready by sundown. Oda (short, flour on everything) says it always is. They bicker fondly and notice almost nothing outside their oven.</p>
+<p><strong>Pip and Juno</strong> (<code>pip</code>, <code>juno</code>): siblings, about seven and nine. Pip is delighted by everything; Juno counts things and corrects people kindly. They think the red lantern rolling across the square was the best thing that happened all day.</p>
+<h2>Your lane</h2>
+<p><strong>Nell</strong> (<code>nell</code>): the neighbor on your lane, in her eighties, shawl and cane, always on her step. Has watched sixty-one festivals. Dry humor. Doesn't give advice; tells a story instead, usually one where she was the one who got it wrong. Notices when the lane goes dark and isn't worried by it.</p>
+<p><strong>Ash</strong> (<code>ash</code>): your friend, runs the tea cart, glasses and a long scarf. Steady and doesn't push. If you hide, Ash comes up the hill, calls into the hollow once, and leaves tea on the rock. Ash treats rest as allowed and is still glad when you come back.</p>
+<h2>Who you can talk to, and when</h2>
+<table>
+<thead><tr><th>When</th><th>Who</th><th>What changes</th></tr></thead>
+<tbody>
+<tr><td>Afternoon, before the fall</td><td>Nell (lane), Ash and the bakers (street), Tobin (inside the workshop), Mara and the kids (square)</td><td>Sets up who people are. Tobin mentions his own fall.</td></tr>
+<tr><td>Night, if you hid</td><td>Ash at the hollow; Mara and Tobin overheard</td><td>Ash checks on you; Mara and Tobin each think it was their fault.</td></tr>
+<tr><td>Finding out what happened</td><td>Tobin, the bakers, the kids, plus Nell (if you hid; behind the dark lane) or Ash (if you stayed)</td><td>Each conversation is a fact: Tobin fell too, the bakers didn't see, the kids watched the lantern, Mara was worried. Ash gives you a candle if you hid.</td></tr>
+<tr><td>Festival evening</td><td>Everyone</td><td>Reactions depend on what you did and how fully you did it.</td></tr>
+<tr><td>Chapter two, the morning after</td><td>The bakers, Mara and Tobin ask for help; Nell, Ash and the kids</td><td>Each errand wears you down. Everyone takes "no" well. Ash offers to cover your stall; telling Ash or Mara before resting is how resting works.</td></tr>
+<tr><td>Chapter three, the storm</td><td>Pip (scared), Mara, Tobin, Nell, Ash</td><td>Pip panics too; once you're calm you can breathe with her. Mara asks for help tying the lanterns down.</td></tr>
+</tbody>
+</table>
+<h2>Conversations</h2>
+<p>Talking to someone opens a menu of topics you can come back to (<code>talk_*</code> knots at the end of <code>story/festival.ink</code>). Topics change with the part of the story (<code>phase</code>: afternoon, finding out what happened, festival, the morning after, after the storm) and open up as you learn things. The conversations the story depends on (finding out what happened, the morning errands, telling someone you're resting) are topics too. A bright, bobbing speech bubble means someone you haven't talked to yet in this part of the story; a faint one means you have, and can again.</p>
+<h2>Their own stories</h2>
+<p>Each villager's story runs quietly through all three chapters. None of them is a lesson; they mirror the player's situation from the outside.</p>
+<table>
+<thead><tr><th>Who</th><th>Their story</th><th>What they remember</th></tr></thead>
+<tbody>
+<tr><td>Tobin</td><td>Fell on the same stone that morning. Laughs first so nobody can laugh at him, a habit from his dad. In chapter two Pip is acting out his fall for everyone; you can tell him you wanted to vanish too. Hesketh has offered him the workshop and he hasn't answered; after the storm he says yes. He fixes the stone.</td><td>Whether you laughed with him, were kind ("that sounds rough"), or said nothing; whether you told him about your own fall; whether he told you about Hesketh's offer.</td></tr>
+<tr><td>Mara</td><td>Her grandmother Rosa started the festival 61 years ago with one lantern on her step. When things go quiet she assumes it's her fault. Overcommits; in chapter two, if you're resting, you can suggest she does too. Freezes in the storm. After it, she can open Rosa's box of notes with you and find out who the first lantern was for.</td><td>Whether you heard about her grandmother; whether she took an hour off; whether you opened the box together.</td></tr>
+<tr><td>Wren and Oda</td><td>Wren's back hurts and she won't say so; Oda knows, and has been secretly getting up an hour early for a year to do Wren's kneading. By the storm, Wren asks for help out loud. If you noticed Oda's tiredness, Wren finds out after the storm.</td><td>Whether you noticed Wren's back; whether you carried the bread trays; whether you noticed Oda's tiredness.</td></tr>
+<tr><td>Pip and Juno</td><td>Their mum works nights as a nurse, so the bakers mind them. Pip wants to stay up all night and is scared in the storm. Juno counts things (412 cobblestones, 73 flags) when it's loud: "It gives the noise somewhere to go." She started counting when their mum first went on nights.</td><td>Whether you helped Pip breathe; whether you know about Juno's counting.</td></tr>
+<tr><td>Nell</td><td>One winter, after losing her husband and then her place at the mill, she didn't come out till spring. When she did, someone had painted her door yellow. Nobody owned up. If you've heard her story and opened Rosa's box with Mara, you can tell her the first lantern was for her.</td><td>What you told her ("Not me. Not today."); whether you heard about the door; whether you told her what Rosa wrote.</td></tr>
+<tr><td>Ash</td><td>Wants to open a tea shop in the old mill office and is scared nobody will come. Signs the lease in chapter two, opens next week. Has known about your hollow since you were both ten.</td><td>How you reacted (encouraged, joked, or asked what scared them).</td></tr>
+</tbody>
+</table>
+<h2>Full backstories</h2>
+<p>This is the background the dialogue is written from. Most of it never appears on screen; the parts that do are marked <strong>On screen</strong>. Write new lines so they could be true of the person below, and never use a backstory to explain a skill or to make the player feel they caused someone's trouble.</p>
+<h3>The village</h3>
+<table>
+<thead><tr><th>Years ago</th><th>What happened</th></tr></thead>
+<tbody>
+<tr><td>About 70</td><td>Rosa and Nell, both girls, grow up across Lantern Lane from each other.</td></tr>
+<tr><td>63</td><td>Nell marries Wil. Both work at the mill.</td></tr>
+<tr><td>61, autumn</td><td>Wil dies of a fever. In November the mill shuts and half the village loses its work.</td></tr>
+<tr><td>61, winter</td><td>Nell stops coming out, and keeps her curtains closed. Rosa starts setting a lantern on her own step every night, where Nell's window can see it. Neighbors ask, then copy her: first the lane, then the square. That is the first festival.</td></tr>
+<tr><td>60, April</td><td>Rosa paints Nell's door yellow while Nell is still inside. Neither of them ever mentions it.</td></tr>
+<tr><td>40</td><td>Hesketh opens the lantern workshop on Market Street, so the village can stop buying lanterns from the city.</td></tr>
+<tr><td>25</td><td>Oda's aunt Bet hands over the bakery. Wren arrives for one summer's work and stays.</td></tr>
+<tr><td>About 20</td><td>You move to Lantern Lane at eight, know nobody, and find the hollow. Ash, staying with their gran, finds you there two years later.</td></tr>
+<tr><td>20</td><td>Wren and Oda marry.</td></tr>
+<tr><td>About 10</td><td>You move away for some years.</td></tr>
+<tr><td>6</td><td>Tobin arrives at sixteen to apprentice with Hesketh. Ash takes over their gran's tea cart.</td></tr>
+<tr><td>5</td><td>Rosa dies. Mara, who has lived with her for years, takes over the festival.</td></tr>
+<tr><td>2</td><td>Hesketh retires to the coast, Tobin's home town. He writes long letters about glue.</td></tr>
+<tr><td>Last spring</td><td>You come back. Wren's back starts to hurt; Oda starts getting up at three.</td></tr>
+<tr><td>This week</td><td>The 62nd festival (Nell has watched 61 from her step, and this is the next). Mara asks you to carry the lanterns.</td></tr>
+</tbody>
+</table>
+<pre class="mermaid">flowchart LR
+  rosa["Rosa (gone five years)"] -- "first lantern, yellow door" --&gt; nell[Nell]
+  rosa -- "grandmother" --&gt; mara[Mara]
+  mara -- "the box of notes" --&gt; rosa
+  you[You] -- "friends since you were ten" --- ash[Ash]
+  nell -- "watched you grow up" --&gt; you
+  ash -- "shop in the old mill office" --&gt; nell
+  tobin[Tobin] -- "apprentice" --&gt; hesketh["Hesketh (on the coast)"]
+  oda[Oda] -- "married" --- wren[Wren]
+  wren -- "breakfast most mornings" --&gt; kids[Pip and Juno]
+  kids -- "their mum works nights" --&gt; mum["Mum (nurse in Haddon)"]
+  mara -- "asked you to carry the lanterns" --&gt; you</pre>
+<h3>You (red panda)</h3>
+<p>Kept loose on purpose, so any player can step in: no family details, no gender, no job.</p>
+<ul>
+<li><strong>History:</strong> moved to Lantern Lane at eight, the new one who knew nobody. Found the hollow</li>
+</ul>
+<p>in the rocks the first month and went there whenever something went wrong. At ten, Ash found you there, sat outside without saying much, and waited until the tea went cold. You chipped Ash's gran's cup at twelve and cried for an hour.</p>
+<ul>
+<li><strong>The years away:</strong> you left for some years and came back last spring. This is your first</li>
+</ul>
+<p>festival back. Carrying the lanterns is the first job anyone has given you since; it means you belong here again, which is why dropping them lands so hard.</p>
+<ul>
+<li><strong>What people know:</strong> Nell has always known where you went (<strong>On screen</strong>, afternoon: "I</li>
+</ul>
+<p>always knew where you'd gone"). Ash knows about the hollow and comes to it (<strong>On screen</strong>, if you hid). Mara asked you because you came back (<strong>On screen</strong>, afternoon).</p>
+<h3>Mara (deer)</h3>
+<ul>
+<li><strong>Family:</strong> Rosa's granddaughter. Spent summers in Rosa's house on Lantern Lane as a child</li>
+</ul>
+<p>and moved in at twenty when Rosa needed help. Her mother lives in the city and visits at New Year. Mara still lives in Rosa's house; the supper invitations are for there.</p>
+<ul>
+<li><strong>The festival:</strong> took it over at twenty-nine, when Rosa died. Rosa never used a list; Mara</li>
+</ul>
+<p>has eleven. The lists are how she keeps the fear of doing it wrong somewhere she can see it.</p>
+<ul>
+<li><strong>What she fears:</strong> being the one who lets the festival fade. Underneath that: that people</li>
+</ul>
+<p>were only ever kind to her because of Rosa. That's why her first guess, when anything goes quiet, is that she caused it.</p>
+<ul>
+<li><strong>What she wants:</strong> one festival where nothing goes wrong. She finds out it never happened,</li>
+</ul>
+<p>even for Rosa.</p>
+<ul>
+<li><strong>The box:</strong> a shoebox in the attic marked FESTIVAL, untouched for five years. Inside, sixty</li>
+</ul>
+<p>years of pencil notes, almost all of them mistakes ("Year three. Forgot the candles. Used turnips."). At the bottom, the oldest note: the first lantern was for Nell, and Rosa painted her door. <strong>On screen</strong>, after the storm, if you heard how the festival started.</p>
+<ul>
+<li><strong>Habits:</strong> says "okay, okay" when stressed; walks the same loop of the square when</li>
+</ul>
+<p>thinking; keeps Rosa's lantern on the top shelf, away from everything.</p>
+<h3>Tobin (otter)</h3>
+<ul>
+<li><strong>Family:</strong> from a fishing town on the coast. His dad, Fen, jokes through everything,</li>
+</ul>
+<p>including the years the boats came back empty. Tobin loves him, and is slowly working out which jokes help and which ones hide things. His mum is quiet and sends knitted socks.</p>
+<ul>
+<li><strong>The workshop:</strong> came at sixteen to apprentice with Hesketh, who retired to the coast two</li>
+</ul>
+<p>years ago and writes long letters about glue. Tobin made eleven of this year's lanterns; the red one is the first he designed himself, and it's a little crooked (<strong>On screen</strong>, main story). Hesketh has offered him the workshop for good. He hasn't answered in three weeks, because an apprentice is allowed to get it wrong and an owner isn't. <strong>On screen</strong>: he tells you at the festival, and says yes after the storm.</p>
+<ul>
+<li><strong>What he fears:</strong> being laughed at for really trying. So he laughs first.</li>
+<li><strong>Habits:</strong> twists wire while he talks; counts things for Juno so she doesn't have to;</li>
+</ul>
+<p>says "Ha" after anything that matters.</p>
+<h3>Wren (goat) and Oda (badger)</h3>
+<ul>
+<li><strong>History:</strong> the bakery was Oda's aunt Bet's. Wren came for one summer, twenty-five years</li>
+</ul>
+<p>ago, as seasonal help. She burned the first batch, Oda laughed, and Wren stayed. Married twenty years.</p>
+<ul>
+<li><strong>Wren:</strong> tall, quick, a worrier about bread and nothing else out loud. Her back has hurt</li>
+</ul>
+<p>since last spring. She's afraid that slowing down means getting old, and that a slow bakery is a bakery people stop coming to.</p>
+<ul>
+<li><strong>Oda:</strong> short, floury, unbothered. For a year she has been getting up at three instead of</li>
+</ul>
+<p>four to do Wren's share of the kneading before Wren comes down, and has never said so, because Wren would never have agreed. <strong>On screen</strong>: you notice she's tired in chapter two, and Wren finds out after the storm. They decide to hire help, out loud.</p>
+<ul>
+<li><strong>Pip and Juno:</strong> the bakers give them breakfast most mornings and mind them during the</li>
+</ul>
+<p>festival.</p>
+<h3>Pip and Juno (mice)</h3>
+<ul>
+<li><strong>Family:</strong> their mum is a nurse at the infirmary in Haddon, the next town, and works</li>
+</ul>
+<p>nights, so she sleeps in the day (<strong>On screen</strong>, chapter two). Nobody else in their family is mentioned; don't add anyone.</p>
+<ul>
+<li><strong>Juno (nine):</strong> started counting things when their mum first went on nights, counting the</li>
+</ul>
+<p>days to Saturday. Now she counts whenever it's loud: 412 cobblestones, 73 flags. She corrects people kindly and is quietly in charge of Pip.</p>
+<ul>
+<li><strong>Pip (seven):</strong> has decided this is the year she's big enough to stay up all night. Named</li>
+</ul>
+<p>Tobin's red lantern Strawberry ("It's a strawberry in its heart"). The storm is her first time being really scared in front of everyone.</p>
+<h3>Nell (sheep)</h3>
+<ul>
+<li><strong>History:</strong> eighty-four. Grew up across the lane from Rosa; they were girls together.</li>
+</ul>
+<p>Married Wil at twenty-one; both worked at the mill. Wil died of a fever the autumn she was twenty-three, and in November the mill shut. That winter she couldn't face anybody and kept the curtains closed. She watched one light through them all winter: Rosa's lantern on Rosa's step. She thought Rosa had just taken to sitting out.</p>
+<ul>
+<li><strong>The door:</strong> in April she opened the door and it was yellow. Nobody owned up. She has</li>
+</ul>
+<p>told people it was losing the mill; it was never the mill. <strong>On screen</strong>: the door story in the afternoon; if you open Rosa's box with Mara after the storm, you can tell Nell, and she says this herself.</p>
+<ul>
+<li><strong>Who she is now:</strong> has watched every festival from her step, without knowing they began</li>
+</ul>
+<p>for her. Dry, unhurried, notices everything. Doesn't give advice; tells stories where she got it wrong. After hearing the truth, she plans to take Mara something yellow.</p>
+<ul>
+<li><strong>Habits:</strong> a flower in her shawl, always; counts festivals instead of birthdays.</li>
+</ul>
+<h3>Ash (bear)</h3>
+<ul>
+<li><strong>Family:</strong> their parents run a tea company in the city with forty shops, and think the cart</li>
+</ul>
+<p>is a phase (six years so far). Ash spent their school years in the village with their gran, Mae, who ran the tea cart and taught you both to drink tea (<strong>On screen</strong>, festival).</p>
+<ul>
+<li><strong>You:</strong> best friends since you were ten, when Ash found you in the hollow and sat outside.</li>
+</ul>
+<p>The chipped cup is the one you broke at twelve; Ash said it was their favorite so you'd stop crying, and then it was (<strong>On screen</strong>, afternoon). That is why, if you hide, Ash knows exactly where to go and what to do (<strong>On screen</strong>, the morning after you hide).</p>
+<ul>
+<li><strong>The shop:</strong> wants to turn the old mill office, where Nell used to work, into a real tea</li>
+</ul>
+<p>shop with chairs. Signs the lease in chapter two; opens the week after the festival. Afraid it will be "just okay".</p>
+<ul>
+<li><strong>Who they are:</strong> steady about other people's feelings and much less steady about their own;</li>
+</ul>
+<p>only admits being scared if you ask. Pronouns: they/them.</p>
+<h2>Passing remarks</h2>
+<p>One-liners villagers say as you walk by (<code>src/game/barks.ts</code>), different in each part of the story. Under the shame haze, only people you've found out about make friendly remarks. Nobody chats during the storm or on the night you hid.</p>
+</main>
+<script type="module">
+function showError(node, reason) {
+  const box = document.createElement("div");
+  box.className = "diagram-error";
+  box.textContent = "This diagram could not be drawn: " + reason;
+  const source = document.createElement("pre");
+  source.textContent = node.textContent;
+  box.appendChild(source);
+  node.replaceWith(box);
+}
+const diagrams = [...document.querySelectorAll("pre.mermaid")];
+try {
+  const { default: mermaid } = await import("https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs");
+  mermaid.initialize({ startOnLoad: false, securityLevel: "strict" });
+  const drawable = [];
+  for (const node of diagrams) {
+    try {
+      await mermaid.parse(node.textContent);
+      drawable.push(node);
+    } catch (error) {
+      showError(node, String(error.message || error).split("\n")[0]);
+    }
+  }
+  // Mermaid scales each diagram down to fit the page width, never up past its natural size.
+  await mermaid.run({ nodes: drawable });
+} catch (error) {
+  for (const node of diagrams) {
+    if (node.isConnected && !node.dataset.processed) showError(node, "the Mermaid library did not load (are you offline?)");
+  }
+}
+</script>
+</body>
+</html>

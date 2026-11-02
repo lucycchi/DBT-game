@@ -381,4 +381,37 @@ describe("long chains", () => {
     );
     expect(text(run)).toMatch(/Fixed it this morning/);
   });
+
+  // Hear about Nell's door and how the festival started, open Rosa's box with Mara after
+  // the storm, then tell Nell what was in it.
+  const rosaChain = (nellReply: string) =>
+    play(
+      "main",
+      ["talk to nell", "yellow front door", "listen", "goodbye", "talk to mara", "how the festival started", "goodbye", "pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular", "walk home",
+       ...REST_WELL, "cold water", "slow your breathing", "pip", "talk to mara", "what she kept", "open it together", "goodbye", "talk to nell", "rosa's notes", nellReply, "goodbye", "walk home"],
+      { fit: false },
+    );
+
+  it("Rosa's notes tell Mara who the first lantern was for, and Nell hears it", () => {
+    for (const reply of ["sit with her", "didn't want you to have to thank her"]) {
+      const run = rosaChain(reply);
+      const t = text(run);
+      expect(t).toMatch(/The first one was for Nell/);
+      expect(t).toMatch(/It was never the mill/);
+      expect(run.engine.getVar("told_nell")).toBe(true);
+    }
+  });
+
+  it("Wren finds out about Oda's early starts, and Tobin answers Hesketh", () => {
+    const run = play(
+      "main",
+      ["pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular", "talk to tobin", "hesketh wrote", "what's stopping you", "goodbye", "walk home",
+       "talk to the bakers", "oda if she slept", "goodbye", ...REST_WELL, ...STORM_CALM.slice(0, 3),
+       "talk to the bakers", "early starts", "goodbye", "talk to tobin", "written back", "goodbye", "walk home"],
+      { fit: false },
+    );
+    const t = text(run);
+    expect(t).toMatch(/getting up at three/);
+    expect(t).toMatch(/I said yes/);
+  });
 });

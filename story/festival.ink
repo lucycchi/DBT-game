@@ -69,6 +69,10 @@ VAR juno_counting = false // Juno told you why she counts
 VAR carried_bread = false
 VAR helped_pip = false
 VAR mended = false     // patched Mara's grandmother's lantern together
+VAR rosa_notes = false   // opened Rosa's box of festival notes with Mara
+VAR told_nell = false    // told Nell who lit the first lantern and painted her door
+VAR oda_early = false    // noticed Oda is more tired than the early start explains
+VAR tobin_offer = false  // Tobin told you Hesketh offered him the workshop
 
 EXTERNAL outcome(a, b, c)
 EXTERNAL distress()       // the meter's current distress, read live from the TS layer
@@ -1118,6 +1122,12 @@ Everyone comes out from doorways and from under the bakery awning, soaked and la
     nell/warm: I saw you by the fountain, mid-storm. Steady as a post, in the end.
 * {phase == "after_storm" && nell_door} [Ask if she'll ever repaint her door]
     nell/smile: Never. Yellow's the only color a door should be.
+* {phase == "afternoon"} [Ask how long she's known you]
+    nell/smile: Since you were eight, and new, and hiding behind a moving van.
+    nell: You used to vanish up that hill for hours. I always knew where you'd gone.
+    nell/warm: I never said. A person's allowed a hiding place.
+* {phase == "after_storm" && rosa_notes && nell_door} [Tell her what was in Rosa's notes]
+    -> nell_truth ->
 + [Say goodbye]
     -> bye
 - -> menu
@@ -1135,6 +1145,23 @@ nell: One winter, a long time ago, I lost my place at the mill. I couldn't face 
 -
 nell/smile: Nobody ever owned up. I've never painted over it.
 ~ nell_door = true
+->->
+
+=== nell_truth ===
+~ told_nell = true
+You tell her. The lantern on Rosa's step, every night that first winter. The yellow paint in spring. "Don't tell her."
+Nell doesn't say anything for a long time. #event: face nell:surprised
+nell/sad: Rosa.
+nell: Wil had died that autumn. Then the mill shut. Everyone thought it was the mill I was hiding from.
+nell/sad: It was never the mill.
+nell: I used to sit at that window in the dark and look at her light. I thought she'd just taken to sitting out.
++ [Sit with her]
+    You sit on the step beside her. The lanterns move a little in what's left of the wind.
++ ["She didn't want you to have to thank her."]
+    nell/laugh: Well, she's out of luck. I'll thank her granddaughter instead.
+-
+nell/warm: Sixty-two festivals. I thought I'd been watching them. Turns out they were watching me.
+nell/smile: I'll go and see Mara tomorrow. Bring her something. Something yellow.
 ->->
 
 === talk_ash ===
@@ -1165,6 +1192,13 @@ nell/smile: Nobody ever owned up. I've never painted over it.
     --
 * {phase == "afternoon"} [Ask about the tea cart]
     -> ash_shop_story ->
+* {phase == "afternoon"} [Ask about the chipped cup]
+    ash/laugh: You chipped it. You were twelve. You cried for an hour.
+    ash: I told you it was my favorite now, so you'd stop.
+    ash/warm: Then it actually was.
+* {phase == "facts" && hide_count > 0} [Ask how Ash knew where you were]
+    ash/warm: Same place as when we were ten. I sat outside that time, too.
+    ash: You came out when the tea went cold. I figured it might work twice.
 * {phase == "facts" && hide_count > 0 && not ash_morning} [Ask how last night went]
     -> ash_morning ->
 * {phase == "facts" && hide_count == 0} [Ask if anyone said anything about the fall]
@@ -1178,6 +1212,10 @@ nell/smile: Nobody ever owned up. I've never painted over it.
     --
 * {phase == "festival"} [Have some tea]
     -> ash_evening ->
+* {phase == "festival"} [Ask if Ash's family is coming to the festival]
+    ash: My parents run a tea company in the city. Forty shops. They think the cart is a phase.
+    ash/laugh: I've been in this phase for six years.
+    ash/warm: Gran had this cart before me. She taught us both to drink tea, remember? She'd have come.
 * {phase == "festival" && ash_shop} [Ask about the tea shop]
     ash/laugh: I put a sign up. Then I took it down. Then I put it back up.
     { ash_cheer == "encourage":
@@ -1264,6 +1302,7 @@ ash/worried: What if nobody comes? What if I open the door and it's just me and 
         tobin: The twelfth is Mara's grandmother's. Older than me. Don't drop that one. Ha.
     - else:
         tobin: The red one's Pip's favorite. She's named it. I'm not allowed to say the name.
+        tobin/embarrassed: It's the first one I designed myself. Don't tell Hesketh it's crooked.
     }
 * {phase == "afternoon"} [Ask about the workshop]
     tobin: Old Hesketh taught me. He retired to the coast. Writes me letters about glue.
@@ -1281,6 +1320,16 @@ ash/worried: What if nobody comes? What if I open the door and it's just me and 
     --
 * {phase == "festival"} [Talk about the stone]
     -> tobin_evening ->
+* {phase == "festival"} [Ask what Hesketh wrote last]
+    ~ tobin_offer = true
+    tobin: He wants to give me the workshop. For good. Not apprentice. Just... mine.
+    tobin/laugh: I haven't written back. Ha. It's been three weeks.
+    ** ["What's stopping you?"]
+        tobin/worried: What if I'm just the apprentice who kept it warm? What if it's all crooked lanterns from here?
+        tobin/sad: Nobody laughs at an apprentice for getting it wrong.
+    ** ["You should take it."]
+        tobin/embarrassed: Everybody says that. Then I go and look at the red one, and it's crooked.
+    --
 * {phase == "festival"} [Ask if anyone teased him]
     tobin/laugh: Pip asked me to fall again so her cousin could see. Twice.
     { tobin_tone == "kind":
@@ -1306,6 +1355,9 @@ ash/worried: What if nobody comes? What if I open the door and it's just me and 
     { tobin_shared:
         tobin/warm: Neither of us vanished. Look at that.
     }
+* {phase == "after_storm" && tobin_offer} [Ask if he's written back to Hesketh]
+    tobin/surprised: This morning. I said yes. Then I laughed for about ten minutes.
+    tobin/warm: Not the hiding kind of laughing. The other kind.
 * {phase == "after_storm" && tobin_evening} [Ask about the stone]
     tobin/smile: Fixed it this morning. With a hammer. Personally. It held through all that.
 + [Say goodbye]
@@ -1342,6 +1394,9 @@ tobin: Mind the stone.
         mara/warm: That's her lantern you've got. The first one.
     }
     ~ mara_grandma = true
+* {phase == "afternoon"} [Ask why she asked you to carry the lanterns]
+    mara: Because you came back. Grandma used to say the festival's how you know you live somewhere.
+    mara/smile: You carry something, you hang it up, and then it's yours too.
 * {phase == "afternoon"} [Offer to help]
     mara/warm: You already are. Just get them here in one piece.
 * {phase == "festival"} [Talk about tonight]
@@ -1380,6 +1435,8 @@ tobin: Mind the stone.
     { mara_rests:
         mara/laugh: Good thing I had that nap.
     }
+* {phase == "after_storm" && mara_grandma} [Ask what she kept of her grandmother's]
+    -> rosa_box ->
 * {phase == "after_storm" && mara_grandma} [Look up at the lanterns with her]
     mara/warm: For seeing each other.
     { lost:
@@ -1390,6 +1447,29 @@ tobin: Mind the stone.
 - -> menu
 = bye
 mara/smile: Thank you. For everything.
+->->
+
+=== rosa_box ===
+mara: Her lantern. Her house. And a box in the attic that says FESTIVAL on the lid.
+mara/embarrassed: Five years, and I've never opened it. What if it's all the things I've been doing wrong?
++ ["Want to open it together? Now?"]
+    mara/worried: ...Okay. Okay. Now, before I think about it.
+    She comes back with a shoebox tied with string. Inside: years of little notes, in pencil.
+    mara: "Year three. Forgot the candles. Used turnips. Nobody noticed."
+    mara/laugh: "Year nine. Set fire to the bakery awning. Bet forgave me by Easter."
+    mara/laughing: They're all mistakes. Sixty years of her getting it wrong. On purpose, practically.
+    At the bottom there's an older note, folded small. Mara reads it, and goes quiet. #event: face mara:surprised
+    mara: "The first one was for Nell. Wil's gone and the mill's shut and she hasn't opened her curtains since October. I thought if there was a light on my step, she'd have something to look at."
+    mara: "Painted her door in April. Yellow. Don't tell her. She'd only feel she had to thank me."
+    mara/warm: The whole festival. It started for Nell.
+    ~ rosa_notes = true
+    { nell_door:
+        mara: You know her better than I do. Grandma said don't tell her. But Grandma's not here to decide.
+    }
++ ["You don't have to open it."]
+    mara/warm: No. I don't, do I.
+    mara: Maybe next year. With tea.
+-
 ->->
 
 === talk_bakers ===
@@ -1444,6 +1524,20 @@ mara/smile: Thank you. For everything.
     - else:
         oda/laugh: Pip and Juno carried the trays. Wren supervised. Loudly.
     }
+* {phase == "day2"} [Ask Oda if she slept]
+    ~ oda_early = true
+    oda/tired: Like a log. A log that gets up early.
+    wren: We start at four. Same as always.
+    oda: ...Mm.
+* {phase == "after_storm" && oda_early} [Ask Oda about the early starts]
+    oda/embarrassed: Oh. Well.
+    oda: I've been getting up at three. Doing Wren's kneading before she comes down.
+    wren/surprised: Since when?
+    oda: Since about last spring. Since your back started.
+    wren/sad: You daft badger. A whole year?
+    oda/warm: You'd never have let me if I'd asked.
+    wren/warm: ...No. I wouldn't.
+    wren: Tomorrow we put a sign in the window. Help wanted. Out loud.
 * {phase == "after_storm"} [Ask how they got through the storm]
     oda: Wren let me carry the bread in off the porch. All of it.
     wren: I asked. Out loud.
@@ -1496,6 +1590,15 @@ oda: Take a roll for the road.
     pip/laugh: I'm yawning ON PURPOSE.
 * {phase == "day2"} [Ask what they're playing]
     -> kids_day2 ->
+* {phase == "day2"} [Ask who's looking after them today]
+    juno: Wren and Oda. Mum's a nurse at the infirmary in Haddon. She works nights, so she sleeps in the day.
+    pip/happy: We get the burnt rolls!
+    juno: I count the days to Saturday. When she's home all day. It's two.
+    pip: She counted when Mum first started nights, too. Every single day.
+* {phase == "festival" && variant == "main"} [Ask Pip what she named the red lantern]
+    pip/laugh: STRAWBERRY.
+    juno: It's not even a strawberry color.
+    pip: It's a strawberry IN ITS HEART.
 * {phase == "day2" && juno_counting} [Ask Juno what she's counting today]
     juno: Bunting flags. Seventy-three. Two are on the wrong way round.
 * {phase == "after_storm"} [Ask Pip how she's doing]

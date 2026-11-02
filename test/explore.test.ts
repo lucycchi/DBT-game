@@ -163,10 +163,11 @@ function choicesInSource(): string[] {
 }
 
 // Slow (a few minutes): run with `npm run explore`. Skipped in the everyday `npm test`.
-// Two choices sit at the end of long chains the explorer rarely completes; story.test.ts
-// plays them on purpose: "Let Ash take over" (all three errands) and "Ask about the stone"
-// (asked at the festival, then after the storm).
-const PLAYED_BY_STORY_TESTS = ["Let Ash take over", "Ask about the stone"];
+// A few choices sit at the end of long chains the explorer rarely completes; story.test.ts
+// plays them on purpose: "Let Ash take over" (all three errands), "Ask about the stone"
+// (asked at the festival, then after the storm), and telling Nell what was in Rosa's notes
+// (her door story, then how the festival started, then Rosa's box after the storm).
+const PLAYED_BY_STORY_TESTS = ["Let Ash take over", "Ask about the stone", "Tell her what was in Rosa's notes", "Sit with her", "\"She didn't want you to have to thank her.\""];
 
 describe.skipIf(!process.env.EXPLORE)("exploring every choice", () => {
   const taken: Taken = new Map();

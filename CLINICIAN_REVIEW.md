@@ -95,3 +95,13 @@ before playtesting with real players. Each points to where it lives.
 16. **Safety.** The title screen says the game is not therapy or a crisis resource and points
    to emergency services and 988 (US). No crisis detection or in-game handling exists.
    DESIGN.md lists crisis handling as an open decision.
+
+17. **Nell's grief and Rosa's lantern.** New backstory: Nell's lost winter came after her young
+    husband died of a fever, and then the mill shut; she kept her curtains closed all winter.
+    Her neighbor Rosa lit a lantern on her own step every night so Nell had a light to look at,
+    and painted Nell's door in spring, telling nobody. If the player opens Rosa's notes with
+    Mara and tells Nell, she says, "It was never the mill." It's written to show care without
+    pushing, not as a model for treating grief or depression. Is it gentle enough, and does it
+    risk suggesting that a withdrawn person just needs a neighbor? (`rosa_box`, `nell_truth` in
+    `story/festival.ink`; CHARACTERS.md, "Full backstories")
+
