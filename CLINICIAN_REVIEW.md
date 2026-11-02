@@ -74,7 +74,7 @@ before playtesting with real players. Each points to where it lives.
     out) drops it by 10. Standard DBT materials carry a medical caution for the cold-water
     skill (heart conditions, eating disorders, low heart rate). The game shows a gentle
     version (splashing and holding the breath briefly) and **does not include the caution**.
-    Should it? (`src/logic/meter.ts`, knot `cold_water`, `runBreathScene` in `src/ui/scenes.ts`)
+    Should it? (`src/logic/meter.ts`, `src/logic/breath.ts`, knot `cold_water`)
 
 13. **Chapter three: acting while flooded.** Grabbing at the lanterns while distress is high
     loses one to the wind. The intent is a natural consequence, not a judgment. The plan

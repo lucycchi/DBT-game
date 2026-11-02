@@ -7,6 +7,7 @@ import { emotionFits, FIT_QUESTIONS, HOTSPOTS, type FitAnswers, type HotspotId, 
 import { buildChain, type ChainRecord, type LinkId } from "../logic/chain";
 import type { Sound } from "../audio/sound";
 import { bodySignals, guiltFits, REST_QUESTIONS, type RestAnswers } from "../logic/rest";
+import { BREATH_GOAL, fullness, initialBreath, IN_MIN, press, release, tick, type BreathNote } from "../logic/breath";
 
 function h<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -151,9 +152,6 @@ export function runCheckInScene(panel: HTMLElement, tasksDone: number): Promise<
 
 /** Hold to breathe in, let go to breathe out, slower than in. Resolves with slow breaths taken. */
 export function runBreathScene(panel: HTMLElement, sound: Sound, onBreath: () => void, reducedMotion: boolean): Promise<number> {
-  const IN_MIN = 3; // seconds
-  const OUT_MIN = 4.5;
-  const GOAL = 4;
   return new Promise((resolve) => {
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
@@ -171,86 +169,95 @@ export function runBreathScene(panel: HTMLElement, sound: Sound, onBreath: () =>
     svg.append(ring, orb);
 
     const cue = h("p", { class: "breath-cue", text: "Press and hold to breathe in." });
-    const count = h("p", { class: "hint", text: `0 of ${GOAL} slow breaths` });
+    const note = h("p", { class: "breath-note" });
+    const count = h("p", { class: "breath-count", text: `0 of ${BREATH_GOAL} slow breaths` });
     const hold = button("Hold to breathe in", "primary breath-btn", () => {});
     const stop = button("Back to the storm", "ghost", () => finish());
 
-    let phase: "idle" | "in" | "out" = "idle";
-    let inLength = 0;
-    let breaths = 0;
-    let raf = 0;
-    let size = 20;
-
     const now = () => performance.now() / 1000;
-    let t0 = now();
+    let state = initialBreath(now());
+    let raf = 0;
+    let done = false;
+
+    const NOTES: Record<NonNullable<BreathNote>, string> = {
+      in_short: "That breath in was quick. Try holding a little longer, until the circle fills.",
+      out_short: "That breath out was quick. Let it go slower, until the circle is small again.",
+    };
 
     const frame = () => {
-      const t = now() - t0;
-      if (phase === "in") size = Math.min(88, 20 + (t / IN_MIN) * 68);
-      if (phase === "out") size = Math.max(20, size - (68 / OUT_MIN) * (1 / 60));
-      orb.setAttribute("r", String(reducedMotion ? (phase === "in" ? 88 : 20) : size));
-      if (phase === "in") cue.textContent = t < IN_MIN ? "In through your nose..." : "Now let go, and breathe out slowly.";
-      if (phase === "out") cue.textContent = t < OUT_MIN ? "Out, slower than in..." : "Hold again for the next breath.";
+      const t = now();
+      const r = tick(state, t);
+      state = r.state;
+      if (r.counted) {
+        count.textContent = `${state.breaths} of ${BREATH_GOAL} slow breaths`;
+        count.classList.remove("pop");
+        void count.offsetWidth; // restart the pop animation
+        count.classList.add("pop");
+        sound.play("ui", { pitch: 0.8 + state.breaths * 0.1 });
+        onBreath();
+        if (state.breaths >= BREATH_GOAL) {
+          cue.textContent = "That's it. Your body is coming down.";
+          window.setTimeout(finish, 1200);
+          done = true;
+          return;
+        }
+      }
+      const dt = t - state.since;
+      const full = fullness(state, t);
+      orb.setAttribute("r", String(reducedMotion ? (state.phase === "in" ? 88 : 20) : 20 + full * 68));
+      if (state.phase === "idle") cue.textContent = "Press and hold to breathe in.";
+      if (state.phase === "in") cue.textContent = dt < IN_MIN ? "In through your nose..." : "Now let go, and breathe out slowly.";
+      if (state.phase === "out") {
+        cue.textContent = state.counted ? "Good. Hold again for the next breath." : state.inLength < IN_MIN ? "Hold again, a little longer this time." : "Out, slower than in...";
+      }
+      note.textContent = state.note ? NOTES[state.note] : "";
+      hold.textContent = state.phase === "in" ? "Breathing in... let go to breathe out" : "Hold to breathe in";
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
 
-    const press = (on: boolean) => {
-      if (on && phase !== "in") {
-        // A breath counts when the last out-breath was long enough after a long enough in-breath.
-        if (phase === "out" && inLength >= IN_MIN && now() - t0 >= OUT_MIN) {
-          breaths++;
-          count.textContent = `${breaths} of ${GOAL} slow breaths`;
-          sound.play("ui", { pitch: 0.8 + breaths * 0.1 });
-          onBreath();
-          if (breaths >= GOAL) return finish();
-        }
-        phase = "in";
-        t0 = now();
-      } else if (!on && phase === "in") {
-        inLength = now() - t0;
-        phase = "out";
-        t0 = now();
-      }
+    const set = (on: boolean) => {
+      if (done) return;
+      state = on ? press(state, now()) : release(state, now());
       hold.classList.toggle("held", on);
     };
 
     const keyDown = (e: KeyboardEvent) => {
-      if (e.key === " " && !e.repeat) {
-        e.preventDefault();
-        press(true);
-      }
+      if (e.key !== " ") return;
+      e.preventDefault();
+      if (!e.repeat) set(true);
     };
     const keyUp = (e: KeyboardEvent) => {
-      if (e.key === " ") press(false);
+      if (e.key !== " ") return;
+      e.preventDefault();
+      set(false);
     };
     hold.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      press(true);
+      hold.setPointerCapture(e.pointerId);
+      set(true);
     });
-    for (const ev of ["pointerup", "pointerleave", "pointercancel"]) hold.addEventListener(ev, () => press(false));
+    for (const ev of ["pointerup", "pointercancel"]) hold.addEventListener(ev, () => set(false));
+    // Space on a focused button would also "click" it; the keyboard is handled above.
+    hold.addEventListener("keydown", (e) => e.key === " " && e.preventDefault());
     window.addEventListener("keydown", keyDown);
     window.addEventListener("keyup", keyUp);
 
     function finish() {
-      // An out-breath in progress that's already long enough still counts.
-      if (phase === "out" && inLength >= IN_MIN && now() - t0 >= OUT_MIN && breaths < GOAL) {
-        breaths++;
-        onBreath();
-      }
       cancelAnimationFrame(raf);
       window.removeEventListener("keydown", keyDown);
       window.removeEventListener("keyup", keyUp);
       closePanel(panel);
-      resolve(breaths);
+      resolve(state.breaths);
     }
 
     openPanel(
       panel,
       h("h2", { text: "Slow your breathing" }),
-      h("p", { class: "hint", text: "Hold Space (or the button) to breathe in for a few seconds. Let go and breathe out for longer than you breathed in." }),
+      h("p", { class: "hint", text: "Hold Space (or the button) to breathe in until the circle fills. Let go and breathe out slowly while it shrinks. Each slow breath counts once the circle is small again." }),
       svg,
       cue,
+      note,
       count,
       h("div", { class: "row" }, hold, stop),
     );
