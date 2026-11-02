@@ -96,15 +96,15 @@ const DBT_TERMS = /opposite action|check(ing)? the facts|chain analysis|\bDBT\b|
 const text = (r: Run) => r.lines.map((l) => l.text).join("\n");
 
 /** Chapter two: say no once, check in, tell Ash, rest. Chapter three: cold water, breathe, help Pip. */
-const REST_WELL = ["ask the bakers", "not today", "check in", "tell ash", "wiped out", "hollow"];
-const STORM_CALM = ["cold water", "slow your breathing", "pip"];
+const REST_WELL = ["talk to the bakers", "anything", "not today", "goodbye", "check in", "talk to ash", "taking the afternoon", "wiped out", "goodbye", "hollow"];
+const STORM_CALM = ["cold water", "slow your breathing", "pip", "walk home"];
 
-const FACTS_TRIO = ["ask tobin", "ask the kids", "laughing at me", "cobblestones", "sit on the fountain"];
+const FACTS_TRIO = ["talk to tobin", "what happened", "goodbye", "talk to the kids", "red lantern", "laughing at me", "goodbye", "cobblestones", "sit on the fountain"];
 
 describe("story: stay, the feeling doesn't fit, all the way back", () => {
   const run = play(
     "main",
-    ["talk to tobin", "what happened", "pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular", "talk to mara", "okay", "walk home", ...REST_WELL, ...STORM_CALM],
+    ["talk to tobin", "knees", "that sounds rough", "goodbye", "pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular", "talk to tobin", "teased", "goodbye", "talk to mara", "about tonight", "okay", "goodbye", "walk home", ...REST_WELL, ...STORM_CALM],
     { fit: false },
   );
 
@@ -143,7 +143,7 @@ describe("story: stay, the feeling doesn't fit, all the way back", () => {
 describe("story: hiding", () => {
   const run = play(
     "main",
-    ["pick up", "carry", "anger", "look again", "shame", "hide", "rest", "stay quiet", "sleep", "go back to the hollow", "rest", "sleep", "talk to ash", "talk to nell", "angry", "ask the kids", "laughing at me", "ask tobin", "sit on the fountain", "nothing", "walk home", ...REST_WELL, ...STORM_CALM],
+    ["pick up", "carry", "anger", "look again", "shame", "hide", "rest", "stay quiet", "sleep", "go back to the hollow", "rest", "sleep", "talk to ash", "last night", "goodbye", "talk to nell", "came looking", "angry", "goodbye", "talk to the kids", "red lantern", "laughing at me", "goodbye", "talk to tobin", "what happened", "goodbye", "sit on the fountain", "nothing", "walk home", ...REST_WELL, ...STORM_CALM],
     { fit: false, approaches: [{ reached: false, headUp: false, turnedBack: false }] },
   );
 
@@ -174,7 +174,7 @@ describe("story: hiding", () => {
 });
 
 describe("story: borrowed lantern, the feeling fits, making it right", () => {
-  const run = play("promise", ["pick up", "carry", "guilt", "stay", ...FACTS_TRIO, "i stacked", "fix it together", "let it be done", "talk to mara", "nod", "walk home", ...REST_WELL, ...STORM_CALM], { fit: true });
+  const run = play("promise", ["pick up", "carry", "guilt", "stay", ...FACTS_TRIO, "i stacked", "fix it together", "let it be done", "talk to mara", "about tonight", "nod", "goodbye", "walk home", ...REST_WELL, ...STORM_CALM], { fit: true });
 
   it("mends the heirloom and recovers fully", () => {
     expect(run.scenes).toEqual(["fit", "approach", "mend", "hang", "chain", "save", "checkin", "save", "breathe", "secure"]);
@@ -205,6 +205,21 @@ describe("story: structure", () => {
     const targets = engine.choices.map((c) => c.target);
     expect(targets).toContainEqual({ kind: "use", id: "lantern_table" });
     expect(targets.filter((t) => t?.kind === "talk").map((t) => t!.id)).toEqual(["nell", "ash", "wren", "tobin", "mara", "pip"]);
+    expect(engine.choices.filter((c) => c.target?.kind === "talk").every((c) => c.fresh)).toBe(true);
+  });
+
+  it("someone you've already talked to stops showing as new, but you can talk again", () => {
+    const engine = new Engine(json, "main");
+    engine.continueBatch();
+    engine.choose(engine.choices.find((c) => c.text === "Talk to Nell")!.index);
+    engine.continueBatch();
+    engine.choose(engine.choices.find((c) => /goodbye/i.test(c.text))!.index);
+    engine.continueBatch();
+    const nell = engine.choices.find((c) => c.text === "Talk to Nell")!;
+    expect(nell.fresh).toBe(false);
+    engine.choose(nell.index);
+    const again = engine.continueBatch().map((l) => l.text);
+    expect(again).toContain("Back again? I'm not going anywhere.");
   });
 });
 
@@ -220,7 +235,7 @@ describe("story: random walks", () => {
       const engine = new Engine(json, variant, () => state.meter.distress);
       let steps = 0;
       while (!engine.ended) {
-        if (++steps > 600) throw new Error("walk did not end");
+        if (++steps > 3000) throw new Error("walk did not end");
         let last: StoryLine | undefined;
         for (const line of engine.lines()) {
           last = line;
@@ -246,9 +261,9 @@ describe("story: random walks", () => {
           if (c.target?.kind === "go") expect(ZONES).toHaveProperty(c.target.id);
           if (c.target?.kind === "use") expect(USABLES).toHaveProperty(c.target.id);
         }
-        // Lean away from hiding so walks finish in a sensible number of steps.
-        const nonHide = choices.filter((c) => !/hollow|hide/i.test(c.text));
-        const pool = rand() < 0.85 && nonHide.length ? nonHide : choices;
+        // Lean away from hiding and from chatting, so walks finish in a sensible number of steps.
+        const onward = choices.filter((c) => !/hollow|hide/i.test(c.text) && c.target?.kind !== "talk");
+        const pool = rand() < 0.8 && onward.length ? onward : choices;
         engine.choose(pool[Math.floor(rand() * pool.length)].index);
       }
       expect(state.world.ended).toBe(true);
@@ -258,7 +273,7 @@ describe("story: random walks", () => {
 });
 
 describe("chapter two: resting on purpose", () => {
-  const rested = playFrom("start_day_two", ["ask mara", "on it", "take down the bunting", "check in", "tell mara", "need to rest", "hollow", ...STORM_CALM], { fit: false, guiltFits: false });
+  const rested = playFrom("start_day_two", ["talk to mara", "anything", "on it", "goodbye", "take down the bunting", "check in", "talk to mara", "taking the afternoon", "need to rest", "holding up", "maybe you could", "goodbye", "hollow", ...STORM_CALM], { fit: false, guiltFits: false });
 
   it("an errand wears you down, and telling someone before resting keeps the village easy", () => {
     expect(rested.engine.getVar("tasks_done")).toBe(1);
@@ -267,7 +282,7 @@ describe("chapter two: resting on purpose", () => {
     expect(text(rested)).not.toMatch(/I looked everywhere/);
   });
 
-  const pushed = playFrom("start_day_two", ["ask the bakers", "sure", "carry the bread", "ask mara", "on it", "take down the bunting", "ask tobin", "okay", "sort the broken", "let ash take over", ...STORM_CALM], { fit: false });
+  const pushed = playFrom("start_day_two", ["talk to the bakers", "anything", "sure", "goodbye", "carry the bread", "talk to mara", "anything", "on it", "goodbye", "take down the bunting", "talk to tobin", "anything", "okay", "goodbye", "sort the broken", "let ash take over", ...STORM_CALM], { fit: false });
 
   it("pushing through every errand ends with the body deciding, and a bigger wave later", () => {
     expect(pushed.engine.getVar("rest_kind")).toBe("partial");
@@ -279,7 +294,7 @@ describe("chapter two: resting on purpose", () => {
 });
 
 describe("chapter three: bringing the body down first", () => {
-  const run = playFrom("start_storm", ["grab at the lanterns", "cold water", "slow your breathing", "run straight"], { fit: false, breaths: 2 });
+  const run = playFrom("start_storm", ["grab at the lanterns", "cold water", "slow your breathing", "run straight", "walk home"], { fit: false, breaths: 2 });
 
   it("can't make a plan until distress comes down, and panicking costs a lantern", () => {
     expect(run.engine.getVar("lost")).toBe(true);
@@ -335,5 +350,23 @@ describe("save points", () => {
     expect(lines[0].text).toBe("Chapter three: The storm.");
     expect(resumed.getVar("rested")).toBe(true);
     expect(resumedState.world.level).toBe(3);
+  });
+});
+
+describe("conversations remember", () => {
+  const run = play(
+    "main",
+    ["talk to tobin", "knees", "that sounds rough", "goodbye", "talk to nell", "how many festivals", "not me", "goodbye", "pick up", "carry", "shame", "stay", ...FACTS_TRIO, "spectacular",
+     "talk to tobin", "teased", "goodbye", "talk to nell", "remind her", "goodbye", "walk home", ...REST_WELL, ...STORM_CALM],
+    { fit: false },
+  );
+  const t = text(run);
+
+  it("Tobin remembers you were kind about his fall", () => {
+    expect(t).toMatch(/only one who said it sounded rough/);
+  });
+
+  it("Nell remembers what you told her", () => {
+    expect(t).toMatch(/"Not me, not today\." I remember/);
   });
 });

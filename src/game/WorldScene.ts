@@ -9,6 +9,7 @@ import { heldHeadUp } from "../logic/outcome";
 import type { HotspotId } from "../logic/facts";
 import type { WorldState } from "../logic/world";
 import type { Sound } from "../audio/sound";
+import { pickBark } from "./barks";
 import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, svgUri, WINDOW_LIGHTS, SKIES } from "./art";
 import {
   AREAS, DOORS, EDGE_X, FOUNTAIN_X, GROUND_Y, groundY, HOOKS, INTERACT_RANGE, INTERIOR, laneBlocked, NPC_SPOTS,
@@ -64,7 +65,9 @@ export class WorldScene extends Phaser.Scene {
   private stack!: Phaser.GameObjects.Image;
   private candle!: Phaser.GameObjects.Image;
   private playerShadow!: Phaser.GameObjects.Ellipse;
-  private npcs = new Map<Npc, { img: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse; bubble: Phaser.GameObjects.Image }>();
+  private npcs = new Map<Npc, { img: Phaser.GameObjects.Image; shadow: Phaser.GameObjects.Ellipse; bubble: Phaser.GameObjects.Image; bark: Phaser.GameObjects.Text; barkedAt: number }>();
+  /** When anyone last made a passing remark, so they don't all talk at once. */
+  private lastBark = -99999;
   private hookLanterns: Phaser.GameObjects.Image[] = [];
   private hookGlows: Phaser.GameObjects.Image[] = [];
   private hookMarkers: Phaser.GameObjects.Arc[] = [];
@@ -130,6 +133,7 @@ export class WorldScene extends Phaser.Scene {
     this.promptAction = null;
     this.actionLabel = null;
     this.hookAction = null;
+    this.lastBark = -99999;
   }
 
   preload() {
@@ -167,12 +171,17 @@ export class WorldScene extends Phaser.Scene {
       const shadow = this.add.ellipse(0, 0, 60, 12, 0x000000, 0.18).setDepth(1);
       const img = this.add.image(0, 0, `char-${id}-neutral`).setOrigin(CHAR_ORIGIN.x, CHAR_ORIGIN.y).setScale(CHAR_DISPLAY_SCALE).setDepth(2);
       const bubble = this.add.image(0, 0, "bubble").setDepth(40).setVisible(false);
+      const bark = this.add
+        .text(0, 0, "", { fontFamily: "Georgia, serif", fontSize: "17px", fontStyle: "italic", color: "#2a2030", backgroundColor: "#fff8e6", padding: { x: 9, y: 5 } })
+        .setOrigin(0.5, 1)
+        .setDepth(42)
+        .setAlpha(0);
       img.setInteractive({ useHandCursor: true }).on("pointerdown", (_: unknown, __: unknown, ___: unknown, ev: Phaser.Types.Input.EventData) => {
         ev?.stopPropagation?.();
         this.walkToAndInteract(img.x);
       });
       this.tweens.add({ targets: img, scaleY: CHAR_DISPLAY_SCALE * 1.015, yoyo: true, repeat: -1, duration: 1400 + Math.random() * 600, ease: "Sine.inOut" });
-      this.npcs.set(id, { img, shadow, bubble });
+      this.npcs.set(id, { img, shadow, bubble, bark, barkedAt: -99999 });
     }
 
     this.playerShadow = this.add.ellipse(0, 0, 64, 12, 0x000000, 0.2).setDepth(3);
@@ -567,7 +576,11 @@ export class WorldScene extends Phaser.Scene {
     this.far.tilePositionX = this.cameras.main.scrollX * 0.25;
     const fog = this.world.time === "morning" || this.world.time === "night" ? Math.min(0.92, 0.5 + this.world.darkness * 0.2) * Math.sign(this.world.darkness) * (this.world.hasLight ? 0.55 : 1) : 0;
     this.laneFog.setAlpha(Phaser.Math.Linear(this.laneFog.alpha, fog, 0.05));
-    for (const [, n] of this.npcs) n.bubble.setPosition(n.img.x, n.img.y - 175);
+    for (const [, n] of this.npcs) {
+      n.bubble.setPosition(n.img.x, n.img.y - 175);
+      n.bark.setPosition(n.img.x, n.img.y - 232);
+    }
+    if (!this.locked && !this.approaching && !this.hanging) this.maybeBark();
     if (!this.approaching && !this.hanging && !this.locked) this.updatePrompt();
     this.drawDarkness();
   }
@@ -665,7 +678,7 @@ export class WorldScene extends Phaser.Scene {
 
   private interact() {
     if (this.locked || this.approaching || this.hanging) return;
-    if (this.time.now - this.unlockedAt < 250) return;
+    if (this.time.now - this.unlockedAt < 600) return;
     this.hooks.sound.unlock();
     const t = this.nearestTarget();
     if (t) return this.pick(t.choice);
@@ -695,21 +708,35 @@ export class WorldScene extends Phaser.Scene {
     cb(choice);
   }
 
+  /** Someone nearby says something in passing, now and then. */
+  private maybeBark() {
+    const now = this.time.now;
+    if (now - this.lastBark < 6000) return;
+    for (const [id, n] of this.npcs) {
+      if (!n.img.visible || Math.abs(n.img.x - this.player.x) > 170 || now - n.barkedAt < 30000) continue;
+      const line = pickBark(this.world, id, Math.random());
+      if (!line) continue;
+      n.barkedAt = now;
+      this.lastBark = now;
+      n.bark.setText(line).setAlpha(0);
+      this.tweens.add({ targets: n.bark, alpha: 1, duration: 250, yoyo: true, hold: 2800 });
+      return;
+    }
+  }
+
+  /** Speech bubbles: bright and bobbing for someone with something new to say, faint otherwise. */
   private refreshBubbles() {
-    const talkable = new Set<Npc>();
+    const talkable = new Map<Npc, boolean>();
     for (const t of this.targets) {
       if (t.choice.target?.kind !== "talk") continue;
-      for (const id of [t.choice.target.id, ...talkGroup(t.choice.target.id)]) talkable.add(id as Npc);
+      for (const id of [t.choice.target.id, ...talkGroup(t.choice.target.id)]) talkable.set(id as Npc, t.choice.fresh);
     }
     for (const [id, n] of this.npcs) {
       const on = talkable.has(id) && n.img.visible;
-      if (on && !n.bubble.visible) {
-        n.bubble.setVisible(true);
-        this.tweens.add({ targets: n.bubble, y: "-=6", yoyo: true, repeat: -1, duration: 700, ease: "Sine.inOut" });
-      } else if (!on) {
-        this.tweens.killTweensOf(n.bubble);
-        n.bubble.setVisible(false);
-      }
+      const fresh = talkable.get(id) ?? false;
+      this.tweens.killTweensOf(n.bubble);
+      n.bubble.setVisible(on).setAlpha(fresh ? 1 : 0.4).setScale(fresh ? 1 : 0.75);
+      if (on && fresh) this.tweens.add({ targets: n.bubble, y: "-=6", yoyo: true, repeat: -1, duration: 700, ease: "Sine.inOut" });
     }
   }
 

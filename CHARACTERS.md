@@ -53,3 +53,32 @@ rock. Ash treats rest as allowed and is still glad when you come back.
 | Festival evening | Everyone | Reactions depend on what you did and how fully you did it. |
 | Chapter two, the morning after | The bakers, Mara and Tobin ask for help; Nell, Ash and the kids | Each errand wears you down. Everyone takes "no" well. Ash offers to cover your stall; telling Ash or Mara before resting is how resting works. |
 | Chapter three, the storm | Pip (scared), Mara, Tobin, Nell, Ash | Pip panics too; once you're calm you can breathe with her. Mara asks for help tying the lanterns down. |
+
+## Conversations
+
+Talking to someone opens a menu of topics you can come back to (`talk_*` knots at the end of
+`story/festival.ink`). Topics change with the part of the story (`phase`: afternoon, finding out
+what happened, festival, the morning after, after the storm) and open up as you learn things.
+The conversations the story depends on (finding out what happened, the morning errands,
+telling someone you're resting) are topics too. A bright, bobbing speech bubble means someone
+you haven't talked to yet in this part of the story; a faint one means you have, and can again.
+
+## Their own stories
+
+Each villager's story runs quietly through all three chapters. None of them is a lesson; they
+mirror the player's situation from the outside.
+
+| Who | Their story | What they remember |
+|---|---|---|
+| Tobin | Fell on the same stone that morning. Laughs first so nobody can laugh at him, a habit from his dad. In chapter two Pip is acting out his fall for everyone; you can tell him you wanted to vanish too. He fixes the stone. | Whether you laughed with him, were kind ("that sounds rough"), or said nothing; whether you told him about your own fall. |
+| Mara | Her grandmother started the festival 61 years ago with one lantern on her step. When things go quiet she assumes it's her fault. Overcommits; in chapter two, if you're resting, you can suggest she does too. Freezes in the storm. | Whether you heard about her grandmother; whether she took an hour off. |
+| Wren and Oda | Wren's back hurts and she won't say so; Oda knows. By the storm, Wren asks for help out loud. | Whether you noticed Wren's back; whether you carried the bread trays. |
+| Pip and Juno | Pip wants to stay up all night and is scared in the storm. Juno counts things (412 cobblestones, 73 flags) when it's loud: "It gives the noise somewhere to go." | Whether you helped Pip breathe; whether you know about Juno's counting. |
+| Nell | One winter, after losing her place at the mill, she didn't come out till spring. When she did, someone had painted her door yellow. Nobody owned up. | What you told her ("Not me. Not today."); whether you heard about the door. |
+| Ash | Wants to open a tea shop in the old mill office and is scared nobody will come. Signs the lease in chapter two, opens next week. | How you reacted (encouraged, joked, or asked what scared them). |
+
+## Passing remarks
+
+One-liners villagers say as you walk by (`src/game/barks.ts`), different in each part of the
+story. Under the shame haze, only people you've found out about make friendly remarks. Nobody
+chats during the storm or on the night you hid.

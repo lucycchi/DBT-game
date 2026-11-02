@@ -80,6 +80,12 @@ before playtesting with real players. Each points to where it lives.
     loses one to the wind. The intent is a natural consequence, not a judgment. The plan
     choices stay locked until distress is under 50. Is the "too high to think" framing faithful?
 
-14. **Safety.** The title screen says the game is not therapy or a crisis resource and points
+14. **Villagers' own stories.** Written to mirror the skills without teaching them. Two touch
+    sensitive ground: Nell describes a winter she "couldn't face anybody" and didn't come out
+    of her house, after losing her job; Juno counts things when it's loud ("It gives the noise
+    somewhere to go"), presented as her own way of coping. Are these safe and well framed?
+    (`talk_nell`, `nell_door_story`, `talk_kids` in `story/festival.ink`; CHARACTERS.md)
+
+15. **Safety.** The title screen says the game is not therapy or a crisis resource and points
    to emergency services and 988 (US). No crisis detection or in-game handling exists.
    DESIGN.md lists crisis handling as an open decision.

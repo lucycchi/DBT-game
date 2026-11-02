@@ -46,6 +46,28 @@ VAR rest_kind = ""        // "full" | "partial"
 VAR breaths = 0           // set by the breathing scene: slow breaths taken
 VAR lost = false
 VAR next_chapter = 0      // which chapter a save point leads into
+// Conversations: which part of the story we're in, and who you've talked to in it
+VAR phase = ""            // "afternoon" | "facts" | "festival" | "day2" | "after_storm"
+VAR seen_nell = ""
+VAR seen_ash = ""
+VAR seen_bakers = ""
+VAR seen_tobin = ""
+VAR seen_mara = ""
+VAR seen_kids = ""
+// What villagers remember, across chapters
+VAR nell_not_me = false   // you told Nell "Not me. Not today."
+VAR nell_door = false     // heard the story of Nell's yellow door
+VAR ash_shop = false      // Ash told you about the tea shop
+VAR ash_cheer = ""        // how you answered: "encourage" | "joke" | "ask"
+VAR tobin_fall = false    // Tobin told you about his own fall
+VAR tobin_tone = ""       // how you took it: "laughed" | "kind" | "quiet"
+VAR tobin_shared = false  // you told Tobin you'd wanted to vanish too
+VAR mara_grandma = false  // Mara told you how the festival started
+VAR mara_rests = false    // Mara agreed to take an hour off too
+VAR wren_back = false     // you noticed Wren's back
+VAR juno_counting = false // Juno told you why she counts
+VAR carried_bread = false
+VAR helped_pip = false
 
 EXTERNAL outcome(a, b, c)
 EXTERNAL distress()       // the meter's current distress, read live from the TS layer
@@ -62,21 +84,34 @@ They're waiting on the bench in the lantern workshop, on Market Street.
 -> afternoon
 
 === afternoon ===
+~ phase = "afternoon"
 - (hub)
 + {not have_lanterns} [Pick up the lanterns in the workshop #use: lantern_table]
     -> pick_up -> hub
-+ {not nell_before} [Talk to Nell #talk: nell]
-    -> nell_before -> hub
-+ {not ash_before} [Talk to Ash #talk: ash]
-    -> ash_before -> hub
-+ {not bakers_before} [Talk to the bakers #talk: wren]
-    -> bakers_before -> hub
-+ {not tobin_before} [Talk to Tobin #talk: tobin]
-    -> tobin_before -> hub
-+ {not mara_before} [Talk to Mara #talk: mara]
-    -> mara_before -> hub
-+ {not kids_before} [Talk to the kids #talk: pip]
-    -> kids_before -> hub
++ {seen_nell != phase} [Talk to Nell #talk: nell #new]
+    -> talk_nell -> hub
++ {seen_nell == phase} [Talk to Nell #talk: nell]
+    -> talk_nell -> hub
++ {seen_ash != phase} [Talk to Ash #talk: ash #new]
+    -> talk_ash -> hub
++ {seen_ash == phase} [Talk to Ash #talk: ash]
+    -> talk_ash -> hub
++ {seen_bakers != phase} [Talk to the bakers #talk: wren #new]
+    -> talk_bakers -> hub
++ {seen_bakers == phase} [Talk to the bakers #talk: wren]
+    -> talk_bakers -> hub
++ {seen_tobin != phase} [Talk to Tobin #talk: tobin #new]
+    -> talk_tobin -> hub
++ {seen_tobin == phase} [Talk to Tobin #talk: tobin]
+    -> talk_tobin -> hub
++ {seen_mara != phase} [Talk to Mara #talk: mara #new]
+    -> talk_mara -> hub
++ {seen_mara == phase} [Talk to Mara #talk: mara]
+    -> talk_mara -> hub
++ {seen_kids != phase} [Talk to the kids #talk: pip #new]
+    -> talk_kids -> hub
++ {seen_kids == phase} [Talk to the kids #talk: pip]
+    -> talk_kids -> hub
 + {have_lanterns} [Carry the lanterns to the fountain #go: fountain] -> trip
 
 === pick_up ===
@@ -86,67 +121,6 @@ Twelve lanterns. You stack them in your arms, all in one trip, to save time. #ev
     Her grandmother's lantern goes on top. It's just quicker this way.
 }
 ->->
-
-=== nell_before ===
-nell/smile: Look at you. Off to fetch the lanterns?
-nell: Sixty-one festivals I've watched from this step. Somebody always drops something.
-+ ["Not me. Not today."]
-    nell/laugh: That's what they all say.
-+ ["Sixty-one? Which was the best?"]
-    nell/warm: The year it poured and not one lantern would light. We all sat in the bakery till morning. Best one.
-- ->->
-
-=== ash_before ===
-ash/smile: Tea when you're done? I'm saving you the chipped cup. It's your favorite, don't argue.
-+ ["Save it. I'll be back before sundown."]
-    ash: I'll hold you to it.
-+ ["You could help me carry them."]
-    ash/laugh: And leave the tea alone? Wren would drink all of it.
-- ->->
-
-=== bakers_before ===
-wren/worried: Oda. The bread. Sundown.
-oda: The bread will be ready at sundown, because the bread is always ready at sundown.
-wren/worried: You don't know that.
-oda/smile: Twenty years, Wren.
-Oda turns to you.
-oda: Don't mind us. We do this every year.
-+ ["It smells amazing."]
-    oda/warm: Come by later. The burnt ones are free.
-+ [Leave them to it]
-    They're already back to arguing.
-- ->->
-
-=== tobin_before ===
-{ have_lanterns:
-    tobin/laugh: Careful with those! Ha. Listen to me, saying careful.
-- else:
-    tobin/smile: They're all on the bench. Twelve. I counted, so Juno doesn't have to.
-}
-There's dust on his knees, and a cracked lantern by his elbow.
-+ ["What happened to you?"]
-    tobin/sad: Loose cobblestone by the fountain. Went down in front of everyone this morning. Took a whole string of bunting with me.
-    tobin/laugh: I've been laughing about it all day, so nobody else gets to first.
-+ ["Your lantern's cracked."]
-    tobin/sad: Yeah. One of mine. Don't tell Mara.
-- ->->
-
-=== mara_before ===
-mara/worried: There you are. Okay. Okay. Lanterns, then bread, then candles, then... okay.
-+ ["Breathe. It's going to be lovely."]
-    mara/smile: Tell me that again at sundown.
-+ ["Where do you want them?"]
-    mara: By the fountain. Thank you. Really.
-- ->->
-
-=== kids_before ===
-pip/surprised: Are you bringing ALL the lanterns?
-juno: There are twelve. Tobin counted. I counted again.
-+ ["Want to see the red one later?"]
-    pip/laugh: YES.
-+ ["Twelve exactly."]
-    juno/smile: I know.
-- ->->
 
 === trip ===
 Halfway to the fountain, your foot catches a loose cobblestone. #event: trip
@@ -280,23 +254,32 @@ But is that what actually happened? Talk to people. Look around the fountain. Fi
 -> facts_hub
 
 === facts_hub ===
+~ phase = "facts"
 - (hub)
-+ {not fact_tobin} [Ask Tobin #talk: tobin]
-    -> fact_tobin -> hub
-+ {not fact_bakers} [Ask the bakers #talk: wren]
-    -> fact_bakers -> hub
-+ {not fact_kids} [Ask the kids #talk: pip]
-    -> fact_kids -> hub
++ {seen_nell != phase} [Talk to Nell #talk: nell #new]
+    -> talk_nell -> hub
++ {seen_nell == phase} [Talk to Nell #talk: nell]
+    -> talk_nell -> hub
++ {seen_ash != phase} [Talk to Ash #talk: ash #new]
+    -> talk_ash -> hub
++ {seen_ash == phase} [Talk to Ash #talk: ash]
+    -> talk_ash -> hub
++ {seen_bakers != phase} [Talk to the bakers #talk: wren #new]
+    -> talk_bakers -> hub
++ {seen_bakers == phase} [Talk to the bakers #talk: wren]
+    -> talk_bakers -> hub
++ {seen_tobin != phase} [Talk to Tobin #talk: tobin #new]
+    -> talk_tobin -> hub
++ {seen_tobin == phase} [Talk to Tobin #talk: tobin]
+    -> talk_tobin -> hub
++ {seen_kids != phase} [Talk to the kids #talk: pip #new]
+    -> talk_kids -> hub
++ {seen_kids == phase} [Talk to the kids #talk: pip]
+    -> talk_kids -> hub
 + {not fact_stone} [Look at the cobblestones by the fountain #use: stone]
     -> fact_stone -> hub
 + {not fact_lanterns} [Look at the lanterns #use: heap]
     -> fact_lanterns -> hub
-+ {hide_count > 0} {not ash_morning} [Talk to Ash #talk: ash]
-    -> ash_morning -> hub
-+ {hide_count > 0} {not fact_mara_nell} [Talk to Nell #talk: nell]
-    -> fact_mara_nell -> hub
-+ {hide_count == 0} {not fact_mara_ash} [Talk to Ash #talk: ash]
-    -> fact_mara_ash -> hub
 + {hide_count > 0} [Go back to the hollow #go: hollow] -> hide
 + {facts_seen >= 3} [Sit on the fountain wall and think it over #go: bench] -> decide
 
@@ -609,6 +592,7 @@ Hang the lanterns along the string. #scene: hang
 -> festival
 
 === festival ===
+~ phase = "festival"
 { completeness:
 - "full": The festival is here. The square is full of people and light.
 - "partial": The festival is here. The square is lit and busy.
@@ -616,18 +600,30 @@ Hang the lanterns along the string. #scene: hang
 }
 Talk to anyone you like. When you're ready, walk home to Lantern Lane.
 - (hub)
-+ {not mara_evening} [Talk to Mara #talk: mara]
-    -> mara_evening -> hub
-+ {not tobin_evening} [Talk to Tobin #talk: tobin]
-    -> tobin_evening -> hub
-+ {not kids_evening} [Talk to the kids #talk: pip]
-    -> kids_evening -> hub
-+ {not bakers_evening} [Talk to the bakers #talk: wren]
-    -> bakers_evening -> hub
-+ {not ash_evening} [Talk to Ash #talk: ash]
-    -> ash_evening -> hub
-+ {not nell_evening} [Talk to Nell #talk: nell]
-    -> nell_evening -> hub
++ {seen_mara != phase} [Talk to Mara #talk: mara #new]
+    -> talk_mara -> hub
++ {seen_mara == phase} [Talk to Mara #talk: mara]
+    -> talk_mara -> hub
++ {seen_tobin != phase} [Talk to Tobin #talk: tobin #new]
+    -> talk_tobin -> hub
++ {seen_tobin == phase} [Talk to Tobin #talk: tobin]
+    -> talk_tobin -> hub
++ {seen_kids != phase} [Talk to the kids #talk: pip #new]
+    -> talk_kids -> hub
++ {seen_kids == phase} [Talk to the kids #talk: pip]
+    -> talk_kids -> hub
++ {seen_bakers != phase} [Talk to the bakers #talk: wren #new]
+    -> talk_bakers -> hub
++ {seen_bakers == phase} [Talk to the bakers #talk: wren]
+    -> talk_bakers -> hub
++ {seen_ash != phase} [Talk to Ash #talk: ash #new]
+    -> talk_ash -> hub
++ {seen_ash == phase} [Talk to Ash #talk: ash]
+    -> talk_ash -> hub
++ {seen_nell != phase} [Talk to Nell #talk: nell #new]
+    -> talk_nell -> hub
++ {seen_nell == phase} [Talk to Nell #talk: nell]
+    -> talk_nell -> hub
 + [Walk home #go: home] -> chain_review
 
 === mara_evening ===
@@ -746,30 +742,39 @@ Outside, the whole village is already up. Tonight is the last night of the festi
 -> day_two_hub
 
 === day_two_hub ===
+~ phase = "day2"
 - (hub)
 { tasks_done >= 3 && not rested: -> collapse }
-+ {task == "" && not bread_ask} [Ask the bakers if they need anything #talk: wren]
-    -> bread_ask -> hub
++ {seen_bakers != phase} [Talk to the bakers #talk: wren #new]
+    -> talk_bakers -> hub
++ {seen_bakers == phase} [Talk to the bakers #talk: wren]
+    -> talk_bakers -> hub
++ {seen_mara != phase} [Talk to Mara #talk: mara #new]
+    -> talk_mara -> hub
++ {seen_mara == phase} [Talk to Mara #talk: mara]
+    -> talk_mara -> hub
++ {seen_tobin != phase} [Talk to Tobin #talk: tobin #new]
+    -> talk_tobin -> hub
++ {seen_tobin == phase} [Talk to Tobin #talk: tobin]
+    -> talk_tobin -> hub
++ {seen_ash != phase} [Talk to Ash #talk: ash #new]
+    -> talk_ash -> hub
++ {seen_ash == phase} [Talk to Ash #talk: ash]
+    -> talk_ash -> hub
++ {seen_nell != phase} [Talk to Nell #talk: nell #new]
+    -> talk_nell -> hub
++ {seen_nell == phase} [Talk to Nell #talk: nell]
+    -> talk_nell -> hub
++ {seen_kids != phase} [Talk to the kids #talk: pip #new]
+    -> talk_kids -> hub
++ {seen_kids == phase} [Talk to the kids #talk: pip]
+    -> talk_kids -> hub
 + {task == "bread"} [Carry the bread trays to the fountain #go: fountain]
     -> bread_done -> hub
-+ {task == "" && not bunting_ask && not (rest_ok && not told)} [Ask Mara if she needs anything #talk: mara]
-    -> bunting_ask -> hub
 + {task == "bunting"} [Take down the bunting on Market Street #use: bunting]
     -> bunting_done -> hub
-+ {task == "" && not sort_ask} [Ask Tobin if he needs anything #talk: tobin]
-    -> sort_ask -> hub
 + {task == "sort"} [Sort the broken lanterns in the workshop #use: lantern_table]
     -> sort_done -> hub
-+ {rest_ok && not told} [Tell Ash you're taking the afternoon #talk: ash]
-    -> tell_ash -> hub
-+ {rest_ok && not told} [Tell Mara you're taking the afternoon #talk: mara]
-    -> tell_mara -> hub
-+ {not nell_day2} [Talk to Nell #talk: nell]
-    -> nell_day2 -> hub
-+ {not ash_day2 && not (rest_ok && not told)} [Talk to Ash #talk: ash]
-    -> ash_day2 -> hub
-+ {not kids_day2} [Talk to the kids #talk: pip]
-    -> kids_day2 -> hub
 + {not check_in} [Sit on the fountain wall and check in with yourself #go: bench] -> check_in
 + [Go up to the hollow #go: hollow] -> hollow_choice
 
@@ -806,6 +811,7 @@ tobin: Help me sort the broken lanterns? Two piles: fixable and not.
 
 === bread_done ===
 ~ task = ""
+~ carried_bread = true
 ~ tasks_done++
 You set the trays down by the fountain. They were heavier than they looked. #event: tire
 -> body_notice ->
@@ -990,6 +996,7 @@ It's gone. The others are still there.
 The storm is just as loud. But you can think again. #event: clear
 Pip is crouched behind the fountain, crying. The lantern string whips back and forth.
 + ["Pip. Breathe with me. In... and slowly out."]
+    ~ helped_pip = true
     pip/sad: I can't.
     "In," you say, and breathe in. "And out, slow." You do it again. Then she does it with you.
     pip/worried: Okay. Okay. I'm okay.
@@ -1007,8 +1014,492 @@ The wind drops as fast as it came. The rain stops. #event: storm off #event: set
 - else:
     Every lantern still glows.
 }
-tobin/laugh: Best festival in years. Nobody will ever forget that wind.
-nell/smile: Sixty-two festivals. That was the best storm.
-ash/warm: You looked like you were going to bolt for a second. Then you didn't.
-You stand in the square with everyone, soaked through, under the lanterns. #event: face you:smile
--> ending
+Everyone comes out from doorways and from under the bakery awning, soaked and laughing. #event: face you:smile
+-> after_storm
+
+=== after_storm ===
+~ phase = "after_storm"
+- (hub)
++ {seen_mara != phase} [Talk to Mara #talk: mara #new]
+    -> talk_mara -> hub
++ {seen_mara == phase} [Talk to Mara #talk: mara]
+    -> talk_mara -> hub
++ {seen_tobin != phase} [Talk to Tobin #talk: tobin #new]
+    -> talk_tobin -> hub
++ {seen_tobin == phase} [Talk to Tobin #talk: tobin]
+    -> talk_tobin -> hub
++ {seen_kids != phase} [Talk to the kids #talk: pip #new]
+    -> talk_kids -> hub
++ {seen_kids == phase} [Talk to the kids #talk: pip]
+    -> talk_kids -> hub
++ {seen_bakers != phase} [Talk to the bakers #talk: wren #new]
+    -> talk_bakers -> hub
++ {seen_bakers == phase} [Talk to the bakers #talk: wren]
+    -> talk_bakers -> hub
++ {seen_ash != phase} [Talk to Ash #talk: ash #new]
+    -> talk_ash -> hub
++ {seen_ash == phase} [Talk to Ash #talk: ash]
+    -> talk_ash -> hub
++ {seen_nell != phase} [Talk to Nell #talk: nell #new]
+    -> talk_nell -> hub
++ {seen_nell == phase} [Talk to Nell #talk: nell]
+    -> talk_nell -> hub
++ [Walk home #go: home] -> ending
+
+
+// ===========================================================================
+// Conversations. Each villager has a menu of topics that changes with `phase`
+// and opens up as you learn things. Story-critical talks (facts, errands,
+// telling someone you're resting) are topics here too. Rules: CHARACTERS.md.
+// Villagers talk about their own lives; nobody explains a skill.
+// ===========================================================================
+
+=== talk_nell ===
+{ seen_nell != phase:
+    ~ seen_nell = phase
+    { phase:
+    - "afternoon": nell/smile: Look at you. Off to fetch the lanterns?
+    - "facts":
+        { hide_count > 0:
+            nell/warm: Come here, then.
+        - else:
+            nell/worried: I heard a clatter from up here. You all right?
+        }
+    - "festival": nell/smile: Look at that. Sixty-one festivals and they still get me.
+    - "day2": nell: Morning.
+    - else: nell/laugh: Well! Sixty-two festivals. That was the best storm.
+    }
+- else:
+    nell: Back again? I'm not going anywhere.
+}
+- (menu)
+* {phase == "afternoon"} [Ask how many festivals she's seen]
+    nell: Sixty-one, from this step. Somebody always drops something.
+    ** ["Not me. Not today."]
+        ~ nell_not_me = true
+        nell/laugh: That's what they all say.
+    ** ["Which one was the best?"]
+        nell/warm: The year it poured and not one lantern would light. We all sat in the bakery till morning. Best one.
+    -- 
+* {phase == "afternoon"} [Ask about her yellow front door]
+    -> nell_door_story ->
+* {phase == "afternoon"} [Ask what she's watching]
+    nell: Everyone. Best show in the village.
+    nell/smile: Mara's walked past six times with that list. Tobin twice, limping. Pip once, at a gallop.
+* {phase == "facts" && hide_count > 0} [Ask if anyone came looking for you]
+    -> fact_mara_nell ->
+* {phase == "facts" && hide_count == 0} [Ask if she saw you fall]
+    nell: From up here? I saw a lantern rolling and somebody getting up.
+    nell/warm: That's all a fall is, from a distance.
+* {phase == "facts" && nell_door && hide_count > 0} [Ask about her yellow door again]
+    nell/warm: You've been up in that hollow, haven't you.
+    nell: Whoever painted my door never knocked. They just made it a bit easier to come out.
+* {phase == "festival"} [Ask how this one compares]
+    -> nell_evening ->
+* {phase == "festival" && nell_not_me} [Remind her what you said this afternoon]
+    nell/laugh: "Not me, not today." I remember.
+    nell/warm: Somebody always drops something. Doesn't mean it stays dropped.
+* {phase == "day2"} [Tell her how you're doing]
+    -> nell_day2 ->
+* {phase == "day2" && nell_door} [Ask who she thinks painted her door]
+    nell: Sixty years of guessing. I've decided it was everybody.
+* {phase == "after_storm"} [Talk about the storm]
+    nell: Best storm in sixty-two festivals. Nobody went home.
+    nell/warm: I saw you by the fountain, mid-storm. Steady as a post, in the end.
+* {phase == "after_storm" && nell_door} [Ask if she'll ever repaint her door]
+    nell/smile: Never. Yellow's the only color a door should be.
++ [Say goodbye]
+    -> bye
+- -> menu
+= bye
+nell/smile: Go on, then.
+->->
+
+=== nell_door_story ===
+nell: You've noticed my door, then. Yellow as a yolk.
+nell: One winter, a long time ago, I lost my place at the mill. I couldn't face anybody. I didn't come out till spring.
++ ["What happened in spring?"]
+    nell/warm: I opened the door, and it was yellow. Somebody had painted it while I was in there.
++ [Listen]
+    nell/warm: When I finally opened it, it was yellow. Somebody had painted it while I was hiding.
+-
+nell/smile: Nobody ever owned up. I've never painted over it.
+~ nell_door = true
+->->
+
+=== talk_ash ===
+{ seen_ash != phase:
+    ~ seen_ash = phase
+    { phase:
+    - "afternoon": ash/smile: Tea when you're done? I'm saving you the chipped cup. It's your favorite, don't argue.
+    - "facts":
+        { hide_count > 0:
+            ash/worried: Hey. There you are.
+        - else:
+            ash: Hey.
+        }
+    - "festival": ash/smile: There you are.
+    - "day2": ash: Morning.
+    - else: ash/warm: Here. Hot. Drink it.
+    }
+- else:
+    ash: Still here. Still pouring.
+}
+- (menu)
+* {phase == "afternoon"} [Ask what's in the pot]
+    ash: Smoky black with orange peel. I'm calling it Lantern. Very marketable.
+    ** ["Save me a cup. I'll be back before sundown."]
+        ash: I'll hold you to it.
+    ** ["You could help me carry the lanterns."]
+        ash/laugh: And leave the tea alone? Wren would drink all of it.
+    --
+* {phase == "afternoon"} [Ask about the tea cart]
+    -> ash_shop_story ->
+* {phase == "facts" && hide_count > 0 && not ash_morning} [Ask how last night went]
+    -> ash_morning ->
+* {phase == "facts" && hide_count == 0} [Ask if anyone said anything about the fall]
+    -> fact_mara_ash ->
+* {phase == "facts" && ash_shop} [Ask about the tea shop]
+    ash: Not now. You first. How are you doing?
+    ** ["Embarrassed, honestly."]
+        ash/warm: Yeah. That stone has embarrassed half the village this week.
+    ** ["I'm fine."]
+        ash: Okay. Offer stands, whenever.
+    --
+* {phase == "festival"} [Have some tea]
+    -> ash_evening ->
+* {phase == "festival" && ash_shop} [Ask about the tea shop]
+    ash/laugh: I put a sign up. Then I took it down. Then I put it back up.
+    { ash_cheer == "encourage":
+        ash/warm: You said you'd come. I'm holding you to that, too.
+    }
+* {phase == "day2" && not (rest_ok && not told)} [Ask about the stall]
+    -> ash_day2 ->
+* {phase == "day2" && rest_ok && not told} [Tell Ash you're taking the afternoon]
+    -> tell_ash ->
+* {phase == "day2" && ash_shop} [Ask how the shop plans are going]
+    ash/worried: I signed the lease this morning. I haven't slept either. Don't tell anyone.
+    ** ["That's huge. Well done."]
+        ash/warm: It's terrifying. Thank you.
+    ** ["You should take a rest too."]
+        ash/laugh: After you.
+    --
+* {phase == "after_storm"} [Drink the tea]
+    The tea is terrible. You drink all of it.
+    ash/warm: You looked like you were going to bolt for a second, back there. Then you didn't.
+* {phase == "after_storm" && ash_shop} [Ask about opening day]
+    ash: Next week. I'm terrified. I'm doing it anyway.
+    ash/smile: The chipped cup's yours, obviously.
++ [Say goodbye]
+    -> bye
+- -> menu
+= bye
+ash: See you.
+->->
+
+=== ash_shop_story ===
+ash: Can I tell you something? I'm thinking of turning the old mill office into a tea shop. A real one. With chairs.
+ash/worried: What if nobody comes? What if I open the door and it's just me and forty cups?
++ ["People will come. I'll come."]
+    ~ ash_cheer = "encourage"
+    ash/warm: That's one.
++ ["Then you'll have forty cups of tea. Sounds fine to me."]
+    ~ ash_cheer = "joke"
+    ash/laugh: You're no help at all. Thank you.
++ ["What scares you most about it?"]
+    ~ ash_cheer = "ask"
+    ash: That I'll try, and it'll be... just okay.
+    ash/smile: Huh. Saying it out loud makes it smaller.
+-
+~ ash_shop = true
+->->
+
+=== talk_tobin ===
+{ seen_tobin != phase:
+    ~ seen_tobin = phase
+    { phase:
+    - "afternoon":
+        { have_lanterns:
+            tobin/laugh: Careful with those! Ha. Listen to me, saying careful.
+        - else:
+            tobin/smile: They're all on the bench. Twelve. I counted, so Juno doesn't have to.
+        }
+        There's dust on his knees, and a cracked lantern by his elbow.
+    - "facts": tobin/worried: Oh. Hi.
+    - "festival": tobin/smile: Look at them go.
+    - "day2": tobin: Morning. Mind the glue.
+    - else: tobin/laugh: Did you SEE that wind?
+    }
+- else:
+    tobin: Back for more?
+}
+- (menu)
+* {phase == "afternoon"} [Ask about his knees]
+    tobin/sad: Loose cobblestone by the fountain. Went down in front of everyone this morning. Took a whole string of bunting with me.
+    tobin/laugh: I've been laughing about it all day, so nobody else gets to first.
+    ~ tobin_fall = true
+    ** [Laugh with him]
+        ~ tobin_tone = "laughed"
+        tobin/laugh: See? Better already.
+    ** ["That sounds rough, actually."]
+        ~ tobin_tone = "kind"
+        tobin/sad: ...Yeah. It was a bit.
+    ** [Say nothing]
+        ~ tobin_tone = "quiet"
+        He fiddles with a twist of wire.
+    --
+* {phase == "afternoon"} [Ask about the lanterns]
+    tobin/smile: Eleven of them are mine. Took me all spring.
+    { variant == "promise":
+        tobin: The twelfth is Mara's grandmother's. Older than me. Don't drop that one. Ha.
+    - else:
+        tobin: The red one's Pip's favorite. She's named it. I'm not allowed to say the name.
+    }
+* {phase == "afternoon"} [Ask about the workshop]
+    tobin: Old Hesketh taught me. He retired to the coast. Writes me letters about glue.
+    tobin/laugh: Long letters.
+* {phase == "facts"} [Ask Tobin what happened]
+    -> fact_tobin ->
+* {phase == "facts" && fact_tobin} [Ask why he laughs so much]
+    tobin: My dad laughed at everything. Even when it hurt. Especially when it hurt.
+    tobin/worried: I think I learned that if you laugh first, nobody can laugh at you.
+    tobin/sad: Doesn't really work, does it.
+    ** ["It's a good laugh, though."]
+        tobin/smile: Thanks.
+    ** ["No. But I get it."]
+        tobin/warm: Yeah.
+    --
+* {phase == "festival"} [Talk about the stone]
+    -> tobin_evening ->
+* {phase == "festival"} [Ask if anyone teased him]
+    tobin/laugh: Pip asked me to fall again so her cousin could see. Twice.
+    { tobin_tone == "kind":
+        tobin/warm: You were the only one who said it sounded rough. I thought about that all afternoon.
+    }
+* {phase == "day2" && task == "" && not sort_ask} [Ask if he needs anything]
+    -> sort_ask ->
+* {phase == "day2"} [Ask how he's doing]
+    tobin/worried: Honestly? Pip's been telling everyone about my fall. With actions. It's a whole show now.
+    ** {hide_count > 0} ["I hid in the hollow all night, after mine."]
+        ~ tobin_shared = true
+        tobin/surprised: You did? Huh.
+        tobin/smile: I thought it was just me who wanted to vanish. Two of us, then.
+    ** {hide_count == 0} ["I wanted to vanish yesterday, too."]
+        ~ tobin_shared = true
+        tobin/surprised: You? You looked so... still.
+        tobin/smile: Huh. Two of us, then.
+    ** ["You'll be old news by tonight."]
+        tobin: Promise?
+    --
+* {phase == "after_storm"} [Talk about the storm]
+    tobin/laugh: Best festival in years. Nobody will ever forget that wind.
+    { tobin_shared:
+        tobin/warm: Neither of us vanished. Look at that.
+    }
+* {phase == "after_storm" && tobin_evening} [Ask about the stone]
+    tobin/smile: Fixed it this morning. With a hammer. Personally. It held through all that.
++ [Say goodbye]
+    -> bye
+- -> menu
+= bye
+tobin: Mind the stone.
+->->
+
+=== talk_mara ===
+{ seen_mara != phase:
+    ~ seen_mara = phase
+    { phase:
+    - "afternoon": mara/worried: There you are. Okay. Okay. Lanterns, then bread, then candles, then... okay.
+    - "festival": mara/smile: Hi.
+    - "day2": mara/worried: Morning! Sorry. Morning. I've got a list.
+    - else: mara/surprised: We're all still here.
+    }
+- else:
+    mara: Hi again.
+}
+- (menu)
+* {phase == "afternoon"} [Ask how she's doing]
+    mara/worried: Fine. Great. Everything's fine. Three things are on fire, metaphorically.
+    ** ["Breathe. It's going to be lovely."]
+        mara/smile: Tell me that again at sundown.
+    ** ["Where do you want the lanterns?"]
+        mara: By the fountain. Thank you. Really.
+    --
+* {phase == "afternoon"} [Ask how the festival started]
+    mara: My grandmother started it. Sixty-one years ago, with one lantern on her own front step.
+    mara/smile: Then a neighbor put one out. Then the whole lane. Then the square.
+    { variant == "promise":
+        mara/warm: That's her lantern you've got. The first one.
+    }
+    ~ mara_grandma = true
+* {phase == "afternoon"} [Offer to help]
+    mara/warm: You already are. Just get them here in one piece.
+* {phase == "festival"} [Talk about tonight]
+    -> mara_evening ->
+* {phase == "festival" && mara_grandma} [Ask about her grandmother]
+    mara/warm: She used to say the lanterns aren't for seeing by. They're for seeing each other.
+* {phase == "festival"} [Ask what she was worried about]
+    mara/worried: Last night? That something had gone wrong and it was my fault. It's always my first guess.
+    ** ["It wasn't."]
+        mara/smile: I know. Now.
+    ** ["That's my first guess, too."]
+        mara/laugh: Then we should start a club. We'd blame ourselves for the snacks.
+    --
+* {phase == "day2" && task == "" && not bunting_ask && not (rest_ok && not told)} [Ask if she needs anything]
+    -> bunting_ask ->
+* {phase == "day2" && rest_ok && not told} [Tell Mara you're taking the afternoon]
+    -> tell_mara ->
+* {phase == "day2"} [Ask how she's holding up]
+    mara/worried: Fine. Great. I've slept four hours since Tuesday.
+    ** {rest_ok} ["I'm going to rest this afternoon. Maybe you could, too."]
+        ~ mara_rests = true
+        mara: ...An hour. Maybe. If Tobin watches the list.
+        mara/laugh: He'll lose the list.
+    ** ["You should rest after the festival."]
+        mara/laugh: After the festival. I always say that.
+    ** [Nod]
+        She nods back, already looking at the list.
+    --
+* {phase == "after_storm"} [Talk about the storm]
+    mara/worried: I froze. Everything was flying and I just stood there.
+    ** ["You came back, though."]
+        mara/smile: We both did.
+    ** ["Me too, at first."]
+        mara/warm: It was a lot, wasn't it.
+    --
+    { mara_rests:
+        mara/laugh: Good thing I had that nap.
+    }
+* {phase == "after_storm" && mara_grandma} [Look up at the lanterns with her]
+    mara/warm: For seeing each other.
+    { lost:
+        mara/smile: One's somewhere over the hill. Grandma would say it's lighting somebody else's way.
+    }
++ [Say goodbye]
+    -> bye
+- -> menu
+= bye
+mara/smile: Thank you. For everything.
+->->
+
+=== talk_bakers ===
+{ seen_bakers != phase:
+    ~ seen_bakers = phase
+    { phase:
+    - "afternoon":
+        wren/worried: Oda. The bread. Sundown.
+        oda: The bread will be ready at sundown, because the bread is always ready at sundown.
+    - "facts":
+        oda: Hello, love.
+    - "festival": wren/smile: You made it.
+    - "day2": oda: Morning! Mind the flour.
+    - else: oda/laugh: Still dry in here. Mostly.
+    }
+- else:
+    oda: Back for more bread?
+}
+- (menu)
+* {phase == "afternoon"} [Ask about the bread]
+    wren/worried: You don't know it'll be ready.
+    oda/smile: Twenty years, Wren.
+    oda: Don't mind us. We do this every year.
+    ** ["It smells amazing."]
+        oda/warm: Come by later. The burnt ones are free.
+    ** [Leave them to it]
+        They're already back to arguing.
+    --
+* {phase == "afternoon"} [Ask how long they've been married]
+    oda: Twenty years.
+    wren: Nineteen of them arguing about bread.
+    oda/smile: And one about the oven.
+* {phase == "afternoon"} [Ask Wren why she keeps rubbing her back]
+    wren: I'm not.
+    oda: She is.
+    wren/worried: It's fine. It's always fine.
+    ~ wren_back = true
+* {phase == "facts"} [Ask if they saw anything]
+    -> fact_bakers ->
+* {phase == "festival"} [Have some bread]
+    -> bakers_evening ->
+* {phase == "festival" && wren_back} [Ask Wren about her back]
+    oda: Go on. Tell them.
+    wren/sad: ...It's sore. It's been sore all week.
+    oda/warm: First time in twenty years she's said so out loud.
+* {phase == "day2" && task == "" && not bread_ask} [Ask if they need anything]
+    -> bread_ask ->
+* {phase == "day2"} [Ask how Wren's back is]
+    ~ wren_back = true
+    { carried_bread:
+        wren/warm: Better, for not carrying those trays. Thank you. I wouldn't have asked.
+    - else:
+        oda/laugh: Pip and Juno carried the trays. Wren supervised. Loudly.
+    }
+* {phase == "after_storm"} [Ask how they got through the storm]
+    oda: Wren let me carry the bread in off the porch. All of it.
+    wren: I asked. Out loud.
+    oda/laugh: I nearly fainted.
++ [Say goodbye]
+    -> bye
+- -> menu
+= bye
+oda: Take a roll for the road.
+->->
+
+=== talk_kids ===
+{ seen_kids != phase:
+    ~ seen_kids = phase
+    { phase:
+    - "afternoon": pip/surprised: Are you bringing ALL the lanterns?
+    - "facts": juno: Oh. Hi.
+    - "festival": juno: Hi.
+    - "day2": juno: Morning.
+    - else: pip/surprised: That was the LOUDEST thing ever.
+    }
+- else:
+    juno: You again.
+}
+- (menu)
+* {phase == "afternoon"} [Ask what they're up to]
+    juno: Counting the lanterns. There are twelve. Tobin counted. I counted again.
+    ** ["Want to see the red one later?"]
+        pip/laugh: YES.
+    ** ["Twelve exactly."]
+        juno/smile: I know.
+    --
+* {phase == "afternoon"} [Ask Juno what else she counts]
+    juno: Cobblestones. There are four hundred and twelve in the square.
+    pip: She counts when it's loud.
+    juno: It gives the noise somewhere to go.
+    ~ juno_counting = true
+* {phase == "afternoon"} [Ask Pip about tonight]
+    pip/laugh: I'm staying up the WHOLE night.
+    juno: She says that every year.
+* {phase == "facts"} [Ask them about the red lantern]
+    -> fact_kids ->
+* {phase == "facts"} [Ask Juno how many lanterns there are now]
+    juno: Still twelve. I checked. Twice.
+* {phase == "festival"} [Look at the red lantern]
+    -> kids_evening ->
+* {phase == "festival"} [Ask Pip if she's tired yet]
+    pip: I'm not even tired.
+    juno: She's yawning.
+    pip/laugh: I'm yawning ON PURPOSE.
+* {phase == "day2"} [Ask what they're playing]
+    -> kids_day2 ->
+* {phase == "day2" && juno_counting} [Ask Juno what she's counting today]
+    juno: Bunting flags. Seventy-three. Two are on the wrong way round.
+* {phase == "after_storm"} [Ask Pip how she's doing]
+    { helped_pip:
+        pip/smile: I did the breathing. In, and slow out. I'm going to do it at school.
+    - else:
+        pip/sad: I was scared.
+        juno: I held her hand. And counted.
+    }
+* {phase == "after_storm" && juno_counting} [Ask Juno how many she counted]
+    juno/smile: Four hundred and twelve cobblestones. Twice. It helped.
++ [Say goodbye]
+    -> bye
+- -> menu
+= bye
+pip/laugh: BYE!
+->->

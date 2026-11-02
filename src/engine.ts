@@ -26,6 +26,8 @@ export interface StoryChoice {
   index: number;
   text: string;
   target: ChoiceTarget | null;
+  /** `#new`: someone you haven't talked to yet in this part of the story. */
+  fresh: boolean;
 }
 
 export function parseChoiceTarget(tags: readonly string[] | null | undefined): ChoiceTarget | null {
@@ -95,7 +97,12 @@ export class Engine {
   }
 
   get choices(): StoryChoice[] {
-    return this.story.currentChoices.map((c) => ({ index: c.index, text: c.text, target: parseChoiceTarget(c.tags) }));
+    return this.story.currentChoices.map((c) => ({
+      index: c.index,
+      text: c.text,
+      target: parseChoiceTarget(c.tags),
+      fresh: (c.tags ?? []).some((t) => t.trim() === "new"),
+    }));
   }
 
   choose(index: number): void {

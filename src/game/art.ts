@@ -59,6 +59,7 @@ interface HouseOpts {
   chimney?: boolean;
   flowers?: boolean;
   windows?: number;
+  doorColor?: string;
 }
 
 function house(o: HouseOpts, worldX: number): string {
@@ -79,7 +80,7 @@ function house(o: HouseOpts, worldX: number): string {
   }
   if (o.door !== undefined) {
     s += `<rect x="${o.door - 24}" y="${GROUND_Y - 84}" width="48" height="84" rx="22" fill="${C.woodDark}"/>`;
-    s += `<rect x="${o.door - 18}" y="${GROUND_Y - 78}" width="36" height="78" rx="17" fill="#6a4030"/>`;
+    s += `<rect x="${o.door - 18}" y="${GROUND_Y - 78}" width="36" height="78" rx="17" fill="${o.doorColor ?? "#6a4030"}"/>`;
     s += `<circle cx="${o.door + 10}" cy="${GROUND_Y - 38}" r="3" fill="#e7c35a"/>`;
     s += `<rect x="${o.door - 34}" y="${GROUND_Y - 4}" width="68" height="8" rx="2" fill="#8d7c64"/>`;
   }
@@ -149,7 +150,8 @@ function sign(x: number, y: number, text: string, color = "#f3e2c4"): string {
 function laneSVG(a: Area): string {
   const w = a.x1 - a.x0;
   let s = tree(60, GROUND_Y, 1.1, 3);
-  s += house({ x: 150, w: 250, h: 230, wall: C.wall[0], roof: C.roof[0], door: 300, chimney: true, flowers: true, windows: 3 }, a.x0);
+  // Nell's house. Someone painted her door yellow one spring, long ago.
+  s += house({ x: 150, w: 250, h: 230, wall: C.wall[0], roof: C.roof[0], door: 300, chimney: true, flowers: true, windows: 3, doorColor: "#f2c43a" }, a.x0);
   s += `<rect x="260" y="${GROUND_Y - 22}" width="110" height="22" rx="3" fill="#8d7c64"/>`; // Nell's step
   s += house({ x: 430, w: 180, h: 200, wall: C.wall[2], roof: C.roof[1], windows: 2, flowers: true }, a.x0);
   s += house({ x: 640, w: 200, h: 240, wall: C.wall[3], roof: C.roof[2], door: 740, chimney: true, windows: 2 }, a.x0);

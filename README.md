@@ -29,8 +29,10 @@ Design decisions are in [DESIGN.md](DESIGN.md), the cast and dialogue rules in
 | Breathe in, then out (storm) | hold <kbd>Space</kbd> or the on-screen button, then let go |
 | Keep your head up (walking back) | hold <kbd>Shift</kbd>, or hold the on-screen Head up button |
 
-The goal and what to do next are always shown in the top left. People with a speech bubble
-want to talk.
+The goal and what to do next are always shown in the top left. People with a bright speech
+bubble have something new to say; talking opens a menu of topics you can come back to.
+Everyone has their own small story running through the three chapters, and they remember
+what you said (see CHARACTERS.md). They'll also make passing remarks as you walk by.
 
 **On a phone or tablet** (landscape; portrait asks you to turn the phone): tap where you want
 to go, tap a person, door, thing or lantern hook to walk over and use it, and tap the text to
