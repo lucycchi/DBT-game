@@ -68,6 +68,7 @@ VAR wren_back = false     // you noticed Wren's back
 VAR juno_counting = false // Juno told you why she counts
 VAR carried_bread = false
 VAR helped_pip = false
+VAR mended = false     // patched Mara's grandmother's lantern together
 
 EXTERNAL outcome(a, b, c)
 EXTERNAL distress()       // the meter's current distress, read live from the TS layer
@@ -438,7 +439,7 @@ Hang the lanterns along the string. #scene: hang
 
 = lit
 { variant == "promise":
-    At sundown the lanterns are lit. Eleven glow. The twelfth hangs dark, torn down one side. #event: hang 11
+    At sundown all twelve lanterns are lit. Her grandmother's lantern glows at the end of the string, light spilling out through the tear down its side. #event: hang 12
 - else:
     At sundown all twelve lanterns are lit. #event: hang 12
 }
@@ -459,7 +460,7 @@ Hang the lanterns along the string. #scene: hang
 = partial_lit
 You help, mostly with your hands, not your eyes. The heat in your face hangs around all evening.
 { variant == "promise":
-    The lanterns are lit. The torn one hangs at the end of the string, dark. #event: hang 11
+    The lanterns are lit. The torn one hangs at the end of the string, light leaking out through its tear. #event: hang 12
 - else:
     The lanterns are lit. #event: hang 12
 }
@@ -475,7 +476,7 @@ Mara hands you an invitation herself. She doesn't stay to talk. #event: invitati
 }
 Mara and Tobin hang the lanterns without you.
 { variant == "promise":
-    At sundown they're lit. Eleven glow. #event: hang 11
+    At sundown they're lit. The torn one glows at the end of the string, the tear showing. #event: hang 12
 - else:
     At sundown they're lit. #event: hang 12
 }
@@ -523,6 +524,7 @@ You're with Mara. #event: pull off
     mara/sad: ...Okay. Yes.
     She finds glue and a sheet of gold paper. Patch the tear. #scene: mend
     ++ [·]
+    ~ mended = true
     You work on it side by side until the last seam is down. #event: mend
 + { variant == "promise" } ["I'll buy you a new one."]
     mara/sad: That's kind. It wouldn't be hers, though.
@@ -556,7 +558,7 @@ Afterward, you want to keep apologizing, just in case.
     #event: settle minimal
     Mara and Tobin hang the lanterns.
     { variant == "promise":
-        At sundown they're lit. One hangs dark. #event: hang 11
+        At sundown they're lit, the torn one too. #event: hang 12
     - else:
         At sundown they're lit. #event: hang 12
     }
@@ -582,7 +584,7 @@ Hang the lanterns along the string. #scene: hang
 - else:
     #event: settle partial
     { variant == "promise" && not part_b:
-        At sundown the lanterns are lit. One hangs dark, torn down its side. #event: hang 11
+        At sundown the lanterns are lit. The torn one glows at the end of the string, tear and all. #event: hang 12
     - else:
         At sundown the lanterns are lit. #event: hang 12
     }
@@ -672,7 +674,15 @@ wren: They're not burnt. They're well done.
 
 === kids_evening ===
 pip/laugh: The red one is the brightest! Look! LOOK!
-juno: It's the same as the others. It just has a dent.
+{ variant == "promise":
+    { mended:
+        juno: It's the same as the others. It just has a gold stripe.
+    - else:
+        juno: It's the same as the others. It just has a rip in it.
+    }
+- else:
+    juno: It's the same as the others. It just has a dent.
+}
 pip/smile: That's why it's the best.
 + ["It's my favorite too."]
     pip/laugh: I KNEW it.

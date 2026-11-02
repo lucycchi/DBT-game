@@ -58,6 +58,9 @@ interface Target {
   auto: boolean;
 }
 
+/** Hook of the red lantern the kids call the brightest. */
+const BRIGHTEST = 11;
+
 export class WorldScene extends Phaser.Scene {
   private hooks!: SceneHooks;
   private world!: WorldState;
@@ -287,9 +290,12 @@ export class WorldScene extends Phaser.Scene {
         img.setData("swing", null).setAngle(0);
       }
       const lit = night && i < w.lanternsHung;
-      if (i === 11 && w.heirloom !== "whole") img.setTexture(w.heirloom === "mended" ? "lantern-mended" : "lantern-torn");
+      if (i === BRIGHTEST && w.heirloom !== "whole") img.setTexture(w.heirloom === "mended" ? "lantern-mended" : "lantern-torn");
       img.setTint(lit || !night ? 0xffffff : 0x8a8098);
-      this.tweens.add({ targets: this.hookGlows[i], alpha: lit && w.lanterns === "hung" && i >= w.lanternsLost ? 0.45 : 0, duration: 700, delay: i * 220 });
+      // The red lantern at the end of the string (dented, or Mara's grandmother's) burns brightest.
+      const glow = i === BRIGHTEST ? 0.8 : 0.45;
+      this.hookGlows[i].setScale(i === BRIGHTEST ? 0.8 : 0.55);
+      this.tweens.add({ targets: this.hookGlows[i], alpha: lit && w.lanterns === "hung" && i >= w.lanternsLost ? glow : 0, duration: 700, delay: i * 220 });
     });
 
     // Player
@@ -882,7 +888,7 @@ export class WorldScene extends Phaser.Scene {
     };
     // Rendering a scaled erase: draw the brush several times for bigger lights.
     for (const l of WINDOW_LIGHTS) erase(l.x, l.y, 1);
-    if (festival) HOOKS.forEach((h, i) => i < w.lanternsHung && i % 2 === 0 && erase(h.x, h.y + 90, 1));
+    if (festival) HOOKS.forEach((h, i) => i < w.lanternsHung && (i % 2 === 0 || i === BRIGHTEST) && erase(h.x, h.y + 90, 1));
     if (w.hasLight || festival) erase(this.player.x, this.player.y - 70, 1);
   }
 }
