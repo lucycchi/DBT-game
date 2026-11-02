@@ -1,6 +1,6 @@
 # Lantern Night
 
-A short walkable adventure in three chapters, about 25 minutes, set in a village during its
+A walkable adventure in six chapters, about an hour, set in a village during its
 lantern festival. You promised to bring the lanterns. On the way across the square you trip, they
 scatter, and someone laughs. What happens next is up to you.
 
@@ -12,6 +12,12 @@ game never names them; it shows what each one is for:
    rest on purpose: tell someone, and really rest. Saying no is allowed.
 3. **When a feeling is too big to think through:** bring your body down first (cold water,
    slow breathing), then make a plan.
+4. **When a friend asks for more than you can give:** say what's being asked, how you feel,
+   and what you can do, kindly and clearly, and hold it when they push.
+5. **When there's a night you can't fix:** get through it without making it worse: comfort
+   for your senses and something to do, instead of checking for news that isn't coming.
+6. **When something is gone for good:** let it be true. Arguing that it shouldn't have
+   happened keeps it hurting; accepting it isn't approving of it.
 
 **Play it:** https://lucycchi.github.io/DBT-game/ (desktop browser, with sound).
 
@@ -31,7 +37,7 @@ Design decisions are in [DESIGN.md](DESIGN.md), the cast and dialogue rules in
 
 The goal and what to do next are always shown in the top left. People with a bright speech
 bubble have something new to say; talking opens a menu of topics you can come back to.
-Everyone has their own small story running through the three chapters, and they remember
+Everyone has their own small story running through the chapters, and they remember
 what you said (see CHARACTERS.md). They'll also make passing remarks as you walk by.
 
 **On a phone or tablet** (landscape; portrait asks you to turn the phone): tap where you want
@@ -84,11 +90,29 @@ for longer). Grabbing at the lanterns while panicking loses one to the wind. Onc
 calm, help Pip breathe, then tie every lantern down while gusts shove you around. How well
 you rested in chapter two sets how big the wave is.
 
-The title screen can jump straight to chapter two or three.
+**Chapter four: Opening day.** A week later, Ash opens a tea room called Mae's in the old
+mill by the river, and asks you to run the counter every morning, unpaid. Put together what
+you'll say (what's being asked, how you feel, what you can do, why it helps you both, how you
+say it), then hold it when Ash pushes. The chalkboard by the door shows how it went. Then
+help Ash tell their mother, Iris, that they're staying.
+
+**Chapter five: The first snow.** Pip and Juno's mum is snowed in at the hospital in the next
+town; the power and phone go out. Each thing you do takes an hour of the night. Warm milk,
+the stove, the music box, paper snowflakes on the window, digging out Nell's step: each
+brings the worry down for a while. Checking the road helps for a moment and makes you want
+to check again. The plough comes at dawn whatever you do.
+
+**Chapter six: The tide.** In Saltmouth, Tobin's home town, the sea has taken most of old
+Hesketh's lantern moulds, and the spring tide comes back into his shed while you're there.
+Carry out what you can, or heave at the sandbags (the water comes anyway). Afterwards, saying
+"it shouldn't have happened" keeps it hurting; "it's gone" lets everyone move. One new
+lantern goes up on the harbour wall.
+
+The title screen can jump straight to any chapter from two to six.
 
 **Save points.** The end of each chapter is a save point: the game saves your progress in
 this browser and offers *Keep playing* or *Take a break*. Next time, the title screen shows
-*Continue chapter two* (or three) with when you saved. *Start over* deletes the save, which
+*Continue chapter two* (or whichever chapter is next) with when you saved. *Start over* deletes the save, which
 is worth doing between participants on a shared playtest computer. Finishing the game clears
 the save. Saves hold the story's progress and the village's state only, never playtest notes,
 and a save from an older version of the game is ignored rather than loaded.

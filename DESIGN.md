@@ -106,6 +106,34 @@ The Game Week brief requires one of three genres; the click-through story fit no
 - **Vulnerability carries across chapters:** resting fully in chapter two makes the panic
   wave smaller in chapter three.
 
+## Chapters four to six (2026-11-02)
+Three more chapters, each in a new place, each teaching a skill the first three don't. They
+run in story order (a week after the festival, then winter, then spring) and each ends at a
+save point. Scenery changes with the story (props switched on and off by `#event: prop`), so
+what's on screen matches what's said.
+
+- **Opening day (asking and saying no):** Ash's tea room, Mae's, opens in the old mill. Ash
+  asks you to run the counter every morning, unpaid. You put together what you'll say from
+  parts (what's being asked, how you feel, what you can do, why it helps you both, how you
+  say it), then hold it when Ash pushes. Clear, kind and steady gets Saturdays written on the
+  chalkboard; giving in costs you the afternoon at the sink; snapping leaves things stiff. Each
+  can be taken back later at the party. Then you help Ash tell their mother Iris they're not
+  coming back to the family company. (DBT: DEAR MAN, GIVE, FAST.)
+- **The first snow (getting through a night you can't fix):** Pip and Juno's mum is stuck at
+  the infirmary in Haddon. Power and phone are out. Each action takes an hour; worry rises
+  with every hour. Comfort for the senses (the stove, warm milk, the music box) and things to
+  do (paper snowflakes, digging out Nell's step, toast) bring it down. Checking the road gives
+  a moment's relief and a stronger pull to check again. Dawn comes whatever you do; how the
+  night went shows in what's on the window and what the kids tell their mum. (DBT: distress
+  tolerance: self-soothe, distracting.)
+- **The tide (accepting what can't be changed):** in Saltmouth, Tobin's home town, the sea
+  has taken most of Hesketh's lantern moulds. The spring tide comes back into the shed on a
+  timer: carry out what you can, or heave at the sandbags (the water comes anyway, and the
+  time is gone). Afterwards, saying "it shouldn't have happened" keeps it hurting; saying
+  "it's gone" (or opening your hands and breathing out) lets everyone move. Fen stops joking
+  for once. They make one new lantern and hang it on the harbour wall. (DBT: radical
+  acceptance, turning the mind, willing hands.)
+
 ## Open decisions
 - Audience: clinical adjunct (with therapist) vs. general wellness product.
   Affects evidence needs, content review, crisis handling, business model.

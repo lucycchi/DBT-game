@@ -10,7 +10,7 @@ export interface Hud {
   setAction(label: string | null, run: (() => void) | null): void;
   setNext(choices: StoryChoice[]): void;
   showArea(name: string): void;
-  controls(mode: "walk" | "approach" | "hang" | "hidden"): void;
+  controls(mode: "walk" | "approach" | "hang" | "tide" | "hidden"): void;
   onHeadUp(handler: (on: boolean) => void): void;
   toast(node: HTMLElement, ms?: number): void;
 }
@@ -74,12 +74,14 @@ export function createHud(root: HTMLElement, sound: Sound, touch: boolean): Hud 
         walk: "Tap where to go · tap people and things to talk or use them",
         approach: "Tap toward Mara to walk · hold Head up with your other thumb",
         hang: "Tap a hook to walk there, then tap the button",
+        tide: "Tap something on the shelves to carry it out before the water reaches it",
         hidden: "",
       }
     : {
         walk: "<kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk, use, enter · or click where to go",
         approach: "<kbd>←</kbd> walk toward Mara · hold <kbd>Shift</kbd> (or the Head up button) to keep your head up",
         hang: "Walk under each hook and press <kbd>E</kbd>",
+        tide: "Walk to something and press <kbd>E</kbd> to carry it out before the water reaches it",
         hidden: "",
       };
 

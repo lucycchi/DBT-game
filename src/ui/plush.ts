@@ -10,7 +10,7 @@ const INK = "#2a1c16";
 
 // --- Animals --------------------------------------------------------------------
 
-type Ears = "pointy" | "leaf" | "tiny" | "round" | "bigRound" | "floppy";
+type Ears = "pointy" | "leaf" | "tiny" | "round" | "bigRound" | "floppy" | "long";
 type Tail = "ringed" | "puff" | "flat" | "stub" | "thin";
 type Pattern = "none" | "redpanda" | "badger" | "wool";
 
@@ -39,11 +39,18 @@ const SPECIES: Record<string, Species> = {
   mouse: { ears: "bigRound", tail: "thin", pattern: "none", fur: "#b9a497", fur2: "#f3e6da", feet: "#b9a497", inner: "#f2a7a9", nose: "#e1858b" },
   sheep: { ears: "floppy", tail: "puff", pattern: "wool", fur: "#f6efe3", fur2: "#f6efe3", face: "#d3b394", feet: "#5a4638", inner: "#c49a80", nose: "#6a4a3a" },
   bear: { ears: "round", tail: "stub", pattern: "none", fur: "#6f4c34", fur2: "#d2ab82", feet: "#4a3222", inner: "#d2ab82", nose: "#2a1c16" },
+  // Ash's mother: the same bear, lighter and touched with grey.
+  greybear: { ears: "round", tail: "stub", pattern: "none", fur: "#9a7a62", fur2: "#e3cdb4", feet: "#5e4636", inner: "#e3cdb4", nose: "#2a1c16" },
+  // Tobin's dad: the same otter, with a greyed muzzle.
+  greyotter: { ears: "tiny", tail: "flat", pattern: "none", fur: "#7a5640", fur2: "#d9d2c6", feet: "#4e3322", inner: "#4e3322", nose: "#2a1c16", muzzle: { rx: 0.58, ry: 0.33 } },
+  hare: { ears: "long", tail: "puff", pattern: "none", fur: "#cdc6bc", fur2: "#f7f3ec", feet: "#9c9389", inner: "#e9b9b4", nose: "#c48486" },
 };
 
 // --- The cast: animal, clothes, size ---------------------------------------------
 
-type Extra = "satchel" | "scarf" | "clipboard" | "apron" | "cap" | "toque" | "bow" | "shawl" | "cane" | "flower" | "glasses";
+type Extra =
+  | "satchel" | "scarf" | "clipboard" | "apron" | "cap" | "toque" | "bow" | "shawl" | "cane" | "flower" | "glasses"
+  | "lapels" | "pearls" | "pillbox" | "oilskin" | "souwester" | "cardigan" | "cape" | "nursecap";
 
 interface Look {
   species: string;
@@ -53,6 +60,8 @@ interface Look {
   scale: number;
   build: number;
   hat?: string;
+  /** How far above the head's center the portrait starts, in head radii (default 1.65). */
+  crown?: number;
 }
 
 export const LOOKS: Record<CharacterId, Look> = {
@@ -65,13 +74,17 @@ export const LOOKS: Record<CharacterId, Look> = {
   juno: { species: "mouse", outfit: "#e0b04a", accent: "#5f95bf", extras: ["bow"], scale: 0.74, build: 0.95 },
   nell: { species: "sheep", outfit: "#6f5a7e", accent: "#a6455a", extras: ["shawl", "cane", "flower"], scale: 0.92, build: 1 },
   ash: { species: "bear", outfit: "#4f7d72", accent: "#e7c35a", extras: ["glasses", "scarf"], scale: 1, build: 0.95 },
+  iris: { species: "greybear", outfit: "#5a2f4c", accent: "#3b1d31", extras: ["lapels", "pearls", "pillbox"], scale: 1.02, build: 0.92, hat: "#3b1d31" },
+  fen: { species: "greyotter", outfit: "#e9b824", accent: "#a87b10", extras: ["oilskin", "souwester"], scale: 1.06, build: 1.12, hat: "#f2c531" },
+  hesketh: { species: "hare", outfit: "#8a4048", accent: "#efe6d2", extras: ["cardigan", "glasses"], scale: 0.9, build: 1, crown: 2.05 },
+  hettie: { species: "mouse", outfit: "#b3d0ea", accent: "#2c3a63", extras: ["cape", "nursecap"], scale: 0.96, build: 0.95 },
 };
 
 // --- Faces and feelings ----------------------------------------------------------
 
 type Eye = "round" | "oval" | "almond" | "small" | "sparkle" | "sleepy" | "calm" | "happy" | "line" | "wide" | "narrow" | "down" | "droopy";
 type Brow = "soft" | "worried" | "raised" | "thick" | "fret" | "serious" | "cross" | "high";
-type Mouth = "w" | "smile" | "grin" | "flat" | "broad" | "toothy" | "o" | "frown" | "pout" | "wobble" | "open" | "openSmile" | "bigO";
+type Mouth = "w" | "smile" | "polite" | "grin" | "flat" | "broad" | "toothy" | "o" | "frown" | "pout" | "wobble" | "open" | "openSmile" | "bigO";
 type Mark = "sparkle" | "tear" | "sweat" | "puff" | "exclaim" | "zzz" | "blushLines";
 export type Motion = "breathe" | "bounce" | "laugh" | "sink" | "stomp" | "hop" | "shiver" | "sway" | "shrink" | "droop";
 
@@ -86,6 +99,10 @@ interface Face {
   lashes?: boolean;
   freckles?: boolean;
   lines?: boolean;
+  /** Big white eyebrows, kept whatever the feeling. */
+  bushy?: boolean;
+  /** Soft shadows under the eyes. */
+  bags?: boolean;
   blink?: boolean;
 }
 
@@ -100,6 +117,10 @@ const FACES: Record<CharacterId, Face> = {
   juno: { eye: "round", brow: "serious", mouth: "o", headW: 1, headH: 1.04, blush: 0.4 },
   nell: { eye: "sleepy", mouth: "smile", lines: true, headW: 1.04, headH: 1, blush: 0.45 },
   ash: { eye: "calm", brow: "soft", mouth: "smile", headW: 1.1, headH: 0.98, blush: 0.3 },
+  iris: { eye: "almond", lashes: true, brow: "raised", mouth: "polite", spread: 0.4, headW: 1.02, headH: 1.04, blush: 0.2 },
+  fen: { eye: "happy", brow: "raised", mouth: "grin", freckles: true, lines: true, spread: 0.46, headW: 1.2, headH: 0.96, blush: 0.5 },
+  hesketh: { eye: "small", brow: "soft", mouth: "smile", bushy: true, lines: true, spread: 0.4, headW: 1, headH: 1.02, blush: 0.4 },
+  hettie: { eye: "calm", brow: "worried", mouth: "smile", bags: true, headW: 1.02, headH: 1.04, blush: 0.4 },
 };
 
 interface Feeling {
@@ -210,6 +231,13 @@ function earsSVG(sp: Species, R: number, hy: number) {
       case "floppy":
         s += `<ellipse cx="${f(d * R)}" cy="${f(hy + R * 0.02)}" rx="${f(R * 0.44)}" ry="${f(R * 0.2)}" transform="rotate(${d * 30} ${f(d * R)} ${f(hy + R * 0.02)})" fill="${sp.face}"/>`;
         break;
+      case "long": {
+        // Tall hare ears whose tips droop outward.
+        const path = `M${f(d * R * 0.3)} ${f(hy - R * 0.55)} Q${f(d * R * 0.42)} ${f(hy - R * 1.75)} ${f(d * R * 1.0)} ${f(hy - R * 1.42)}`;
+        s += `<path d="${path}" fill="none" stroke="${sp.fur}" stroke-width="${f(R * 0.38)}" stroke-linecap="round"/>`;
+        s += `<path d="${path}" fill="none" stroke="${sp.inner}" stroke-width="${f(R * 0.16)}" stroke-linecap="round" stroke-dasharray="${f(R * 1.2)} ${f(R * 4)}" stroke-dashoffset="${f(-R * 0.25)}"/>`;
+        break;
+      }
       case "tiny":
         s += `<circle cx="${f(d * R * 0.8)}" cy="${f(hy - R * 0.6)}" r="${f(R * 0.21)}" fill="${sp.fur}"/><circle cx="${f(d * R * 0.8)}" cy="${f(hy - R * 0.6)}" r="${f(R * 0.1)}" fill="${sp.inner}"/>`;
         break;
@@ -257,12 +285,17 @@ function eyeSVG(kind: Eye, d: number, x: number, y: number, R: number, lashes?: 
   }
 }
 
-function browSVG(kind: Brow, d: number, x: number, y: number, R: number) {
-  const by = y - R * 0.24;
-  const w = R * 0.12;
+function browSVG(kind: Brow, d: number, x: number, y: number, R: number, bushy = false) {
+  const by = y - R * (bushy ? 0.32 : 0.24);
+  const w = R * (bushy ? 0.16 : 0.12);
   const sw = f(R * (kind === "thick" ? 0.085 : 0.045));
-  const line = (x0: number, y0: number, x1: number, y1: number, curve = 0) =>
-    `<path d="M${f(x0)} ${f(y0)} Q${f((x0 + x1) / 2)} ${f((y0 + y1) / 2 - curve)} ${f(x1)} ${f(y1)}" fill="none" stroke="#4a3226" stroke-width="${sw}" stroke-linecap="round"/>`;
+  const line = (x0: number, y0: number, x1: number, y1: number, curve = 0) => {
+    const d0 = `M${f(x0)} ${f(y0)} Q${f((x0 + x1) / 2)} ${f((y0 + y1) / 2 - curve)} ${f(x1)} ${f(y1)}`;
+    if (bushy) {
+      return `<path d="${d0}" fill="none" stroke="#8f877d" stroke-width="${f(R * 0.17)}" stroke-linecap="round"/><path d="${d0}" fill="none" stroke="#ffffff" stroke-width="${f(R * 0.12)}" stroke-linecap="round"/>`;
+    }
+    return `<path d="${d0}" fill="none" stroke="#4a3226" stroke-width="${sw}" stroke-linecap="round"/>`;
+  };
   switch (kind) {
     case "worried": return line(x - d * w, by - R * 0.05, x + d * w, by + R * 0.02);
     case "fret": return line(x - d * w, by - R * 0.08, x + d * w, by + R * 0.03, -R * 0.02);
@@ -280,6 +313,7 @@ function mouthSVG(kind: Mouth, R: number, my: number) {
   const open = (path: string) => `<path d="${path}" fill="#8a3a36" stroke="#3a2620" stroke-width="${f(R * 0.05)}" stroke-linejoin="round"/>`;
   switch (kind) {
     case "smile": return `<path d="M${f(-R * 0.12)} ${f(my)} Q0 ${f(my + R * 0.12)} ${f(R * 0.12)} ${f(my)}" ${st}/>`;
+    case "polite": return `<path d="M${f(-R * 0.08)} ${f(my + R * 0.03)} Q0 ${f(my + R * 0.08)} ${f(R * 0.08)} ${f(my + R * 0.03)}" ${st}/>`;
     case "grin":
       return open(`M${f(-R * 0.17)} ${f(my - R * 0.02)} Q0 ${f(my + R * 0.24)} ${f(R * 0.17)} ${f(my - R * 0.02)} Z`) +
         `<path d="M${f(-R * 0.08)} ${f(my + R * 0.1)} Q0 ${f(my + R * 0.05)} ${f(R * 0.08)} ${f(my + R * 0.1)}" fill="#f08a8a"/>`;
@@ -366,6 +400,28 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
     s += `<rect x="${f(bw * 0.18)}" y="${f(bot - bh * 0.38)}" width="${f(bw * 0.36)}" height="${f(bh * 0.3)}" rx="${f(bw * 0.06)}" fill="${look.accent}"/>`;
   }
 
+  if (has("lapels")) {
+    // A tailored coat: two lapels meeting in a V, and buttons.
+    for (const d of [-1, 1]) s += `<path d="M${f(d * bw * 0.06)} ${f(top + 1)} L${f(d * bw * 0.34)} ${f(top + 1.5)} L${f(d * bw * 0.22)} ${f(top + bh * 0.3)} L0 ${f(top + bh * 0.52)} Z" fill="${look.accent}"/>`;
+    for (const t of [0.62, 0.8]) s += `<circle cx="0" cy="${f(top + bh * t)}" r="${f(1.2 * Math.max(k, 0.8))}" fill="${look.accent}"/>`;
+  }
+  if (has("oilskin")) {
+    // A fisherman's oilskin: a front seam, toggles, and a deep hem.
+    s += `<path d="M${f(bw * 0.06)} ${f(top + 2)} L${f(bw * 0.06)} ${f(bot + 1)}" stroke="${look.accent}" stroke-width="${f(1.4 * Math.max(k, 0.8))}"/>`;
+    for (const t of [0.3, 0.52, 0.74]) s += `<rect x="${f(bw * 0.06 - 2.4 * k)}" y="${f(top + bh * t - 0.9 * k)}" width="${f(4.8 * k)}" height="${f(1.8 * k)}" rx="${f(0.9 * k)}" fill="${look.accent}"/>`;
+    s += `<path d="M${f(-bw * 0.44)} ${f(bot - bh * 0.12)} Q0 ${f(bot - bh * 0.02)} ${f(bw * 0.44)} ${f(bot - bh * 0.12)}" fill="none" stroke="${look.accent}" stroke-width="${f(1.2 * Math.max(k, 0.8))}" opacity=".7"/>`;
+  }
+  if (has("cardigan")) {
+    // An open knitted cardigan over a shirt, with two pockets and buttons.
+    s += `<path d="M${f(-bw * 0.13)} ${f(top - 1)} L${f(bw * 0.13)} ${f(top - 1)} L${f(bw * 0.05)} ${f(bot)} L${f(-bw * 0.05)} ${f(bot)} Z" fill="${look.accent}"/>`;
+    for (const t of [0.35, 0.55, 0.75]) s += `<circle cx="${f(bw * 0.11)}" cy="${f(top + bh * t)}" r="${f(1.1 * Math.max(k, 0.8))}" fill="#e7d3a8"/>`;
+    for (const d of [-1, 1]) {
+      s += `<rect x="${f(d * bw * 0.27 - bw * 0.1)}" y="${f(top + bh * 0.58)}" width="${f(bw * 0.2)}" height="${f(bh * 0.22)}" rx="${f(bw * 0.03)}" fill="#000000" opacity=".16"/>`;
+      s += `<path d="M${f(d * bw * 0.27 - bw * 0.1)} ${f(top + bh * 0.6)} h${f(bw * 0.2)}" stroke="#ffffff" stroke-width="${f(0.8 * Math.max(k, 0.8))}" stroke-dasharray="1 1" opacity=".35"/>`;
+    }
+    s += `<path d="M${f(-bw * 0.46)} ${f(bot - bh * 0.1)} Q0 ${f(bot)} ${f(bw * 0.46)} ${f(bot - bh * 0.1)}" fill="none" stroke="#000000" stroke-width="${f(1.6 * Math.max(k, 0.8))}" stroke-dasharray="1.2 1" opacity=".18"/>`;
+  }
+
   // Arms and paws. The pointing arm reaches forward and up.
   const arx = Math.max(3.6, bw * 0.15) * S.arm;
   const ary = bh * 0.32;
@@ -391,6 +447,25 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
     s += `<path d="M${f(cx)} 0 L${f(cx)} ${f(cy)} Q${f(cx)} ${f(cy - 6 * k)} ${f(cx - 5 * k)} ${f(cy - 6 * k)}" fill="none" stroke="#6b4a2b" stroke-width="${f(2.6 * Math.max(k, 0.8))}" stroke-linecap="round"/>`;
   }
   if (has("scarf")) s += `<rect x="${f(bw * 0.12)}" y="${f(top + 2)}" width="${f(5.5 * Math.max(k, 0.8))}" height="${f(bh * 0.45)}" rx="2" fill="${look.accent}"/><rect x="${f(-bw * 0.42)}" y="${f(top - 3)}" width="${f(bw * 0.84)}" height="${f(7 * Math.max(k, 0.8))}" rx="${f(3.5 * Math.max(k, 0.8))}" fill="${look.accent}"/>`;
+
+  if (has("cape")) {
+    // A nurse's cape over the shoulders, open at the front, with a red lining edge and a watch.
+    for (const d of [-1, 1]) {
+      s += `<path d="M${f(d * bw * 0.1)} ${f(top - 1)} Q${f(d * bw * 0.66)} ${f(top - 2)} ${f(d * bw * 0.62)} ${f(top + bh * 0.62)} Q${f(d * bw * 0.4)} ${f(top + bh * 0.72)} ${f(d * bw * 0.2)} ${f(top + bh * 0.58)} Z" fill="${look.accent}"/>`;
+      s += `<path d="M${f(d * bw * 0.1)} ${f(top - 1)} L${f(d * bw * 0.2)} ${f(top + bh * 0.58)}" stroke="#b8434a" stroke-width="${f(1.3 * Math.max(k, 0.8))}" stroke-linecap="round"/>`;
+    }
+    s += `<circle cx="${f(-bw * 0.13)}" cy="${f(top + bh * 0.4)}" r="${f(1.8 * Math.max(k, 0.8))}" fill="#e6e8ec" stroke="#8e96a3" stroke-width=".6"/>`;
+    s += `<path d="M${f(-bw * 0.42)} ${f(top + 1)} Q0 ${f(top + 4)} ${f(bw * 0.42)} ${f(top + 1)}" fill="none" stroke="#fbfcfe" stroke-width="${f(2 * Math.max(k, 0.8))}" stroke-linecap="round"/>`;
+  }
+  if (has("pearls")) {
+    for (let i = 0; i <= 8; i++) {
+      const t = i / 8;
+      // Hung low enough to show below the chin.
+      const x = -bw * 0.34 + t * bw * 0.68;
+      const y = top + bh * 0.3 + Math.sin(t * Math.PI) * bh * 0.14;
+      s += `<circle cx="${f(x)}" cy="${f(y)}" r="${f(1.25 * Math.max(k, 0.8))}" fill="#f6f1e6" stroke="#cfc4b0" stroke-width=".3"/>`;
+    }
+  }
 
   // Head
   const hw = R * 1.08 * (face.headW ?? 1);
@@ -428,7 +503,8 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
     s += `<ellipse cx="${f(d * R * 0.6)}" cy="${f(hy + R * 0.3)}" rx="${f(R * 0.16)}" ry="${f(R * 0.09)}" fill="#f07f86" opacity="${face.blush ?? S.blush}"/>`;
     if (face.freckles) for (const [fx, fy] of [[0.52, 0.2], [0.64, 0.26], [0.56, 0.32]]) s += `<circle cx="${f(d * R * fx)}" cy="${f(hy + R * fy)}" r="${f(R * 0.03)}" fill="#7a4a32" opacity=".6"/>`;
     if (face.lines) s += `<path d="M${f(d * (ex + R * 0.2))} ${f(ey + R * 0.02)} l${f(d * R * 0.08)} ${f(R * 0.05)} M${f(d * (ex + R * 0.2))} ${f(ey - R * 0.05)} l${f(d * R * 0.08)} ${f(-R * 0.03)}" stroke="#7a5a4a" stroke-width="${f(R * 0.035)}" stroke-linecap="round" opacity=".6"/>`;
-    if (face.brow) s += browSVG(face.brow, d, d * ex, ey, R);
+    if (face.bags) s += `<path d="M${f(d * ex - R * 0.11)} ${f(ey + R * 0.15)} Q${f(d * ex)} ${f(ey + R * 0.22)} ${f(d * ex + R * 0.11)} ${f(ey + R * 0.15)}" fill="none" stroke="#8a6f86" stroke-width="${f(R * 0.035)}" stroke-linecap="round" opacity=".55"/>`;
+    if (face.brow) s += browSVG(face.brow, d, d * ex, ey, R, face.bushy);
   }
   // Soft highlights
   s += `<ellipse cx="${f(-R * 0.32)}" cy="${f(hy - R * 0.48)}" rx="${f(R * 0.4)}" ry="${f(R * 0.22)}" fill="#ffffff" opacity=".25"/>`;
@@ -447,6 +523,28 @@ export function characterMarkup(id: CharacterId, expr: Expression, opts: DrawOpt
     const w = "#fbf8f2";
     s += `<circle cx="${f(-R * 0.45)}" cy="${f(hy - R * 1.32)}" r="${f(R * 0.45)}" fill="${w}"/><circle cx="${f(R * 0.45)}" cy="${f(hy - R * 1.32)}" r="${f(R * 0.45)}" fill="${w}"/><circle cx="0" cy="${f(hy - R * 1.55)}" r="${f(R * 0.55)}" fill="${w}"/>`;
     s += `<rect x="${f(-R * 0.72)}" y="${f(hy - R * 1.12)}" width="${f(R * 1.44)}" height="${f(R * 0.42)}" rx="${f(R * 0.12)}" fill="${w}"/>`;
+  }
+  if (has("pillbox")) {
+    // A neat small hat, tilted, with a band and a tiny bow.
+    const cx = R * 0.18;
+    const cy = hy - R * 1.02;
+    s += `<g transform="rotate(12 ${f(cx)} ${f(cy)})"><rect x="${f(cx - R * 0.42)}" y="${f(cy - R * 0.22)}" width="${f(R * 0.84)}" height="${f(R * 0.34)}" rx="${f(R * 0.1)}" fill="${look.hat}"/>` +
+      `<ellipse cx="${f(cx)}" cy="${f(cy - R * 0.22)}" rx="${f(R * 0.42)}" ry="${f(R * 0.09)}" fill="#6d3e5e"/>` +
+      `<rect x="${f(cx - R * 0.42)}" y="${f(cy + R * 0.02)}" width="${f(R * 0.84)}" height="${f(R * 0.08)}" fill="#c9a3b6"/>` +
+      `<circle cx="${f(cx + R * 0.3)}" cy="${f(cy + R * 0.06)}" r="${f(R * 0.07)}" fill="#c9a3b6"/></g>`;
+  }
+  if (has("souwester")) {
+    // A yellow rain hat: a domed crown and a wide brim, longer at the back.
+    s += `<path d="M${f(-R * 1.28)} ${f(hy - R * 0.42)} Q${f(-R * 1.1)} ${f(hy - R * 0.74)} 0 ${f(hy - R * 0.78)} Q${f(R * 1.1)} ${f(hy - R * 0.74)} ${f(R * 1.28)} ${f(hy - R * 0.42)} Q${f(R * 1.2)} ${f(hy - R * 0.22)} ${f(R * 0.95)} ${f(hy - R * 0.32)} Q0 ${f(hy - R * 0.5)} ${f(-R * 0.95)} ${f(hy - R * 0.32)} Q${f(-R * 1.2)} ${f(hy - R * 0.22)} ${f(-R * 1.28)} ${f(hy - R * 0.42)} Z" fill="${look.hat}"/>`;
+    s += `<path d="M${f(-R * 0.78)} ${f(hy - R * 0.66)} Q${f(-R * 0.72)} ${f(hy - R * 1.3)} 0 ${f(hy - R * 1.3)} Q${f(R * 0.72)} ${f(hy - R * 1.3)} ${f(R * 0.78)} ${f(hy - R * 0.66)} Z" fill="${look.hat}"/>`;
+    s += `<path d="M${f(-R * 0.78)} ${f(hy - R * 0.68)} Q0 ${f(hy - R * 0.8)} ${f(R * 0.78)} ${f(hy - R * 0.68)}" fill="none" stroke="${look.accent}" stroke-width="${f(R * 0.06)}" opacity=".7"/>`;
+    s += `<path d="M0 ${f(hy - R * 1.3)} L0 ${f(hy - R * 0.76)}" stroke="${look.accent}" stroke-width="${f(R * 0.04)}" opacity=".5"/>`;
+  }
+  if (has("nursecap")) {
+    // A small white folded cap with a navy stripe.
+    const cy = hy - R * 0.92;
+    s += `<path d="M${f(-R * 0.42)} ${f(cy + R * 0.14)} L${f(-R * 0.32)} ${f(cy - R * 0.2)} L${f(R * 0.32)} ${f(cy - R * 0.2)} L${f(R * 0.42)} ${f(cy + R * 0.14)} Q0 ${f(cy + R * 0.06)} ${f(-R * 0.42)} ${f(cy + R * 0.14)} Z" fill="#fbfcfe" stroke="#c9d3e0" stroke-width="${f(R * 0.025)}"/>`;
+    s += `<path d="M${f(-R * 0.36)} ${f(cy - R * 0.04)} L${f(R * 0.36)} ${f(cy - R * 0.04)}" stroke="${look.accent}" stroke-width="${f(R * 0.06)}"/>`;
   }
   if (has("bow")) {
     const bx = R * 0.62;
@@ -479,8 +577,9 @@ export function portraitSVG(id: CharacterId, expr: Expression): string {
   const R = S.headR * look.scale;
   const hy = S.headY * look.scale;
   // Head and shoulders, with room above for ears, hats and the feeling's sign.
-  const size = R * 2.9;
-  const top = hy - R * 1.65;
+  const crown = look.crown ?? 1.65;
+  const size = R * (2.9 + crown - 1.65);
+  const top = hy - R * crown;
   const frames = (["closed", "open", "blink"] as Frame[])
     .map((fr) => `<g class="fr fr-${fr}">${characterMarkup(id, expr, { frame: fr })}</g>`)
     .join("");

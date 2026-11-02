@@ -8,6 +8,7 @@ import { buildChain, type ChainRecord, type LinkId } from "../logic/chain";
 import type { Sound } from "../audio/sound";
 import { bodySignals, guiltFits, REST_QUESTIONS, type RestAnswers } from "../logic/rest";
 import { BREATH_GOAL, fullness, initialBreath, IN_MIN, press, release, tick, type BreathNote } from "../logic/breath";
+import { ASK_PARTS, judgeAsk, sayAsk, type AskAnswers, type AskResult } from "../logic/ask";
 
 function h<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -428,6 +429,50 @@ export function runChainScene(panel: HTMLElement, record: ChainRecord, onTap: (i
       chain,
       reflection,
       done,
+    );
+  });
+}
+
+// --- Saying what you can and can't do (chapter four) ------------------------------
+
+export interface SayItResult extends AskResult {
+  answers: AskAnswers;
+}
+
+/** Put together what you'll say to Ash, one part at a time, and see it as a whole. */
+export function runSayItScene(panel: HTMLElement): Promise<SayItResult> {
+  return new Promise((resolve) => {
+    const answers: AskAnswers = {};
+    const preview = h("p", { class: "sayit-preview" });
+    const say = button("Say it", "primary", () => {
+      closePanel(panel);
+      resolve({ ...judgeAsk(answers), answers });
+    });
+    say.disabled = true;
+    const rows = ASK_PARTS.map((part) => {
+      const opts = h("div", { class: "sayit-opts" });
+      for (const o of part.options) {
+        const b = button(o.text, "choice small", () => {
+          answers[part.id] = o.kind;
+          opts.querySelectorAll("button").forEach((x) => x.classList.toggle("picked", x === b));
+          refresh();
+        });
+        opts.appendChild(b);
+      }
+      return h("div", { class: "fit-q sayit-q" }, h("p", { text: part.prompt }), opts);
+    });
+    function refresh() {
+      const text = sayAsk(answers);
+      preview.textContent = text ? `"${text}"` : "";
+      say.disabled = ASK_PARTS.some((p) => answers[p.id] === undefined);
+    }
+    openPanel(
+      panel,
+      h("h2", { text: "What you'll say to Ash" }),
+      h("p", { class: "hint", text: "Pick one for each. You can change your mind until you say it." }),
+      ...rows,
+      preview,
+      say,
     );
   });
 }

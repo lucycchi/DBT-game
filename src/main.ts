@@ -16,8 +16,8 @@ import { GROUND_Y, VIEW_H, VIEW_W } from "./game/layout";
 import { createDialogueBox } from "./ui/dialogue";
 import { createHud } from "./ui/hud";
 import { createMeterView } from "./ui/meter";
-import { factCard, runBreathScene, runChainScene, runCheckInScene, runFitScene, runMendScene, runSaveScene } from "./ui/scenes";
-import { CHAPTER_NAMES, clearSave, readSave, writeSave, type SaveGame } from "./save";
+import { factCard, runBreathScene, runChainScene, runCheckInScene, runFitScene, runMendScene, runSaveScene, runSayItScene } from "./ui/scenes";
+import { CHAPTER_NAMES, clearSave, readSave, writeSave, type SaveChapter, type SaveGame } from "./save";
 import { PlaytestLog } from "./playtest";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -55,6 +55,9 @@ const CHAPTERS: Record<number, { title: string; goal: string; meter: [string, st
   1: { title: "Lantern Night", goal: "Light up the square for the lantern festival.", meter: ["How bad it feels", "Pull to hide"] },
   2: { title: "Chapter two: The morning after", goal: "Get ready for the last night of the festival.", meter: ["How worn out you are", "Pull to rest"] },
   3: { title: "Chapter three: The storm", goal: "Keep the lanterns lit through the storm.", meter: ["How bad it feels", "Racing thoughts"] },
+  4: { title: "Chapter four: Opening day", goal: "Help Ash open the tea room.", meter: ["How tense it feels", "Pull to just say yes"] },
+  5: { title: "Chapter five: The first snow", goal: "Get Pip and Juno through the night.", meter: ["How worried you are", "Pull to check the road"] },
+  6: { title: "Chapter six: The tide", goal: "Help Tobin and Hesketh with the shed.", meter: ["How much it hurts", "Fighting it"] },
 };
 
 function showChapter(level: number) {
@@ -146,8 +149,8 @@ function waitForChoice(choices: StoryChoice[]): Promise<StoryChoice> {
   });
 }
 
-const CHAPTER_ORDINAL = { 2: "chapter two", 3: "chapter three" } as const;
-const FINISHED = { 2: "Chapter one", 3: "Chapter two" } as const;
+const CHAPTER_ORDINAL: Record<SaveChapter, string> = { 2: "chapter two", 3: "chapter three", 4: "chapter four", 5: "chapter five", 6: "chapter six" };
+const FINISHED: Record<SaveChapter, string> = { 2: "Chapter one", 3: "Chapter two", 4: "Chapter three", 5: "Chapter four", 6: "Chapter five" };
 
 async function play(chosen: Variant, from?: string, resume?: SaveGame) {
   variant = resume?.variant ?? chosen;
@@ -184,7 +187,7 @@ async function play(chosen: Variant, from?: string, resume?: SaveGame) {
       // Save at the start of the next chapter, so resuming begins there.
       dialogue.hide();
       hud.setNext([]);
-      const next = Number(engine.getVar("next_chapter")) as 2 | 3;
+      const next = Number(engine.getVar("next_chapter")) as SaveChapter;
       engine.choose(0);
       const saved = writeSave({ chapter: next, variant, story: engine.saveState(), game: state });
       log.record("save", { chapter: next, saved });
@@ -227,6 +230,22 @@ async function play(chosen: Variant, from?: string, resume?: SaveGame) {
         const n = await runBreathScene(panel, sound, () => apply({ name: "calm", arg: "breath" }), reducedMotion);
         log.record("breathe", n);
         engine.setVar("breaths", n);
+      } else if (scene === "sayit") {
+        const r = await runSayItScene(panel);
+        log.record("sayit", r);
+        engine.setVar("ask_answer", r.answer);
+        engine.setVar("ask_clear", r.clear);
+        engine.setVar("ask_kind", r.kind);
+        engine.setVar("ask_steady", r.steady);
+      } else if (scene === "tide") {
+        hud.controls("tide");
+        const r = await world!.runTide(() => apply({ name: "fight" }));
+        log.record("tide", r);
+        engine.setVar("saved_count", r.saved.length);
+        engine.setVar("saved_red", r.saved.includes("red_mould"));
+        engine.setVar("saved_notebooks", r.saved.includes("notebooks"));
+        engine.setVar("fought", r.fought);
+        hud.controls("hidden");
       } else if (scene === "secure") {
         hud.controls("hang");
         await world!.runSecure();
@@ -267,7 +286,7 @@ function showEnd(log: PlaytestLog) {
   const card = document.createElement("div");
   card.className = "panel-card end";
   const title = document.createElement("h2");
-  title.textContent = "The lanterns burn on into the night.";
+  title.textContent = "The lantern burns on into the night.";
   const thanks = document.createElement("p");
   thanks.textContent = "Thank you for playing Lantern Night.";
   const again = document.createElement("button");
@@ -318,6 +337,9 @@ $("#start-main").addEventListener("click", () => begin("main"));
 $("#start-promise").addEventListener("click", () => begin("promise"));
 $("#start-ch2").addEventListener("click", () => begin("main", "start_day_two"));
 $("#start-ch3").addEventListener("click", () => begin("main", "start_storm"));
+$("#start-ch4").addEventListener("click", () => begin("main", "start_mill"));
+$("#start-ch5").addEventListener("click", () => begin("main", "start_snow"));
+$("#start-ch6").addEventListener("click", () => begin("main", "start_coast"));
 $("#continue").addEventListener("click", () => {
   const save = readSave();
   if (save) begin(save.variant, undefined, save);

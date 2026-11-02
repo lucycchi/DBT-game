@@ -60,12 +60,22 @@ export const METER_EVENTS = new Set([
   "wave",
   "calm",
   "clear",
+  "tense",
+  "worry",
+  "check",
+  "soothe",
+  "fight",
+  "accept",
+  "grief",
 ]);
 
 /** Where distress settles after resting, fully or only because your body made you. */
 export const REST_TARGETS = { full: 10, partial: 35 } as const;
 /** How much each way of bringing your body down lowers distress. */
 export const CALM_DROPS = { cold: 30, breath: 10 } as const;
+/** Chapter five: each hour of waiting adds this much worry; comfort and keeping busy take some away. */
+export const WORRY_STEP = 9;
+export const SOOTHE_DROPS = { comfort: 13, busy: 10 } as const;
 
 export function applyMeterEvent(m: MeterState, ev: GameEvent): MeterState {
   switch (ev.name) {
@@ -109,6 +119,28 @@ export function applyMeterEvent(m: MeterState, ev: GameEvent): MeterState {
     }
     case "clear":
       return moveTo(m, m.distress, 25, 2);
+    // Chapter four: being asked for more than you can give.
+    case "tense":
+      return moveTo(m, m.distress + 10, m.urge + 15, 1);
+    // Chapter five: a long night of waiting for news. Checking the window gives a
+    // moment's relief and leaves the pull to check again stronger; comfort and
+    // something to do bring the worry down for a while.
+    case "worry":
+      return moveTo(m, m.distress + WORRY_STEP, m.urge + 12, 2);
+    case "check":
+      return moveTo(m, m.distress - 6, m.urge + 10, 2);
+    case "soothe": {
+      const drop = SOOTHE_DROPS[ev.arg as keyof typeof SOOTHE_DROPS];
+      if (drop === undefined) throw new Error(`soothe needs comfort|busy, got ${ev.arg}`);
+      return moveTo(m, m.distress - drop, m.urge - drop, 2);
+    }
+    // Chapter six: pushing against something that has already happened.
+    case "fight":
+      return moveTo(m, m.distress + 7, m.urge + 12, 1);
+    case "grief":
+      return moveTo(m, Math.max(m.distress, 62), m.urge, 3);
+    case "accept":
+      return moveTo(m, m.distress - 14, m.urge - 25, 3);
     case "settle": {
       const target = SETTLE_TARGETS[ev.arg as Completeness];
       if (!target) throw new Error(`settle needs full|partial|minimal, got ${ev.arg}`);

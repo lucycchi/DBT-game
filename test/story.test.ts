@@ -18,6 +18,10 @@ interface SceneAnswers {
   guiltFits?: boolean;
   /** Slow breaths taken each time the breathing scene runs. */
   breaths?: number;
+  /** Chapter four: what the say-it scene decides. Defaults to clear, kind and steady. */
+  ask?: { clear: boolean; kind: boolean; steady: boolean };
+  /** Chapter six: what was carried out of the shed, and how often the player fought the tide. */
+  tide?: { saved: string[]; fought: number };
   /** Results of each walk back, in order. Defaults to all the way, head up. */
   approaches?: { reached: boolean; headUp: boolean; turnedBack: boolean }[];
 }
@@ -38,6 +42,21 @@ function handleScene(engine: Engine, scene: string, answers: SceneAnswers): { na
     const n = answers.breaths ?? 3;
     engine.setVar("breaths", n);
     return Array.from({ length: n }, () => ({ name: "calm", arg: "breath" }));
+  }
+  if (scene === "sayit") {
+    const a = answers.ask ?? { clear: true, kind: true, steady: true };
+    engine.setVar("ask_answer", a.clear ? "clear" : "vague");
+    engine.setVar("ask_clear", a.clear);
+    engine.setVar("ask_kind", a.kind);
+    engine.setVar("ask_steady", a.steady);
+  }
+  if (scene === "tide") {
+    const t = answers.tide ?? { saved: ["notebooks", "small_mould", "red_mould"], fought: 0 };
+    engine.setVar("saved_count", t.saved.length);
+    engine.setVar("saved_red", t.saved.includes("red_mould"));
+    engine.setVar("saved_notebooks", t.saved.includes("notebooks"));
+    engine.setVar("fought", t.fought);
+    return Array.from({ length: t.fought }, () => ({ name: "fight" }));
   }
   if (scene === "approach") {
     const a = answers.approaches?.shift() ?? { reached: true, headUp: true, turnedBack: false };
@@ -76,6 +95,8 @@ function play(variant: Variant, picks: string[], answers: SceneAnswers, from?: s
       continue;
     }
     if (engine.ended) return run;
+    // Runs that only script the first three chapters stop where chapter four begins.
+    if (!queue.length && run.lines.some((l) => l.text === "Chapter four: Opening day.")) return run;
     const pick = queue.shift();
     if (pick === undefined) throw new Error(`Ran out of picks at: ${engine.choices.map((c) => c.text).join(" | ")}`);
     const choice = engine.choices.find((c) => c.text.toLowerCase().includes(pick.toLowerCase()));
@@ -108,9 +129,9 @@ describe("story: stay, the feeling doesn't fit, all the way back", () => {
     { fit: false },
   );
 
-  it("runs every challenge and ends", () => {
-    expect(run.scenes).toEqual(["fit", "approach", "hang", "chain", "save", "checkin", "save", "breathe", "secure"]);
-    expect(run.state.world.ended).toBe(true);
+  it("runs every challenge through the first three chapters", () => {
+    expect(run.scenes).toEqual(["fit", "approach", "hang", "chain", "save", "checkin", "save", "breathe", "secure", "save"]);
+    expect(run.engine.getVar("next_chapter")).toBe(4);
   });
 
   it("the pull to hide lets go once you've chosen to stay", () => {
@@ -161,7 +182,7 @@ describe("story: hiding", () => {
   });
 
   it("Ash's candle opens the dark lane, where Nell has a fact", () => {
-    expect(run.state.world.hasLight).toBe(true);
+    expect(run.lines.some((l) => l.events.some((e) => e.name === "get" && e.arg === "candle"))).toBe(true);
     expect(run.state.world.factsFound).toContain("mara");
   });
 
@@ -177,7 +198,7 @@ describe("story: borrowed lantern, the feeling fits, making it right", () => {
   const run = play("promise", ["pick up", "carry", "guilt", "stay", ...FACTS_TRIO, "i stacked", "fix it together", "let it be done", "talk to mara", "about tonight", "nod", "goodbye", "walk home", ...REST_WELL, ...STORM_CALM], { fit: true });
 
   it("mends the heirloom and recovers fully", () => {
-    expect(run.scenes).toEqual(["fit", "approach", "mend", "hang", "chain", "save", "checkin", "save", "breathe", "secure"]);
+    expect(run.scenes).toEqual(["fit", "approach", "mend", "hang", "chain", "save", "checkin", "save", "breathe", "secure", "save"]);
     expect(run.engine.getVar("path")).toBe("repair");
     expect(run.engine.getVar("completeness")).toBe("full");
     expect(run.state.world).toMatchObject({ heirloom: "mended", lanternsHung: 12, squareLight: 1 });
@@ -299,8 +320,8 @@ describe("chapter three: bringing the body down first", () => {
   it("can't make a plan until distress comes down, and panicking costs a lantern", () => {
     expect(run.engine.getVar("lost")).toBe(true);
     expect(run.state.world.lanternsLost).toBe(1);
-    expect(run.scenes).toEqual(["breathe", "secure"]);
-    expect(run.state.world).toMatchObject({ weather: "clear", panic: false, ended: true });
+    expect(run.scenes).toEqual(["breathe", "secure", "save"]);
+    expect(run.state.world).toMatchObject({ weather: "clear", panic: false });
   });
 
   it("cold water brings distress down faster than one slow breath", () => {
@@ -312,8 +333,8 @@ describe("chapter three: bringing the body down first", () => {
 describe("save points", () => {
   it("each chapter boundary is a save point that names the chapter it leads into", () => {
     const run = playFrom("start_day_two", [...REST_WELL, ...STORM_CALM], { fit: false, guiltFits: false });
-    expect(run.scenes.filter((s) => s === "save")).toHaveLength(1);
-    expect(run.engine.getVar("next_chapter")).toBe(3);
+    expect(run.scenes.filter((s) => s === "save")).toHaveLength(2);
+    expect(run.engine.getVar("next_chapter")).toBe(4);
   });
 
   it("a saved story resumes at the start of the next chapter and plays to the end", () => {

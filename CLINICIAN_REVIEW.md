@@ -105,3 +105,31 @@ before playtesting with real players. Each points to where it lives.
     risk suggesting that a withdrawn person just needs a neighbor? (`rosa_box`, `nell_truth` in
     `story/festival.ink`; CHARACTERS.md, "Full backstories")
 
+
+18. **Chapter four: saying no to a friend.** The player puts together what they'll say from
+    parts that follow DEAR MAN (describe what's being asked, say how you feel, say clearly
+    what you can and can't do, say why it helps you both) plus GIVE (said gently) and FAST
+    (not over-apologizing). Then they hold it when pushed, by saying the same thing again or
+    asking what Ash is afraid of. Is the split into parts faithful, and are the "how you say
+    it" options fair? Giving in and snapping both have world costs and can be undone later.
+    (`src/logic/ask.ts`, knots `ash_asks` and `ash_and_iris` in `story/festival.ink`)
+
+19. **Chapter five: getting through a night.** Comfort through the senses (warmth, warm milk,
+    a music box) and keeping busy (paper snowflakes, digging out a neighbor's step, making
+    toast) each lower worry; checking the road gives a brief dip and then a stronger pull to
+    check again, modeling reassurance-seeking. Distraction is presented as a way through a
+    night that can't be fixed, not as avoiding a problem that could be solved. Telling a
+    scared child "I don't know when, but she's trying, and we're okay here" is offered next to
+    a promise you can't keep. Is the reassurance-seeking model accurate, and is the line
+    between distracting and avoiding clear enough? (knots `night`, `check_road`,
+    `talk_kids_night`; `worry`, `check` and `soothe` in `src/logic/meter.ts`)
+
+20. **Chapter six: accepting a loss.** The sea has taken most of Hesketh's work. Fighting the
+    tide at the sandbags spends the time you could use saving things. Afterwards, "It shouldn't
+    have happened. It's not fair." can be chosen again and again (it raises distress each
+    time), while "It's gone. That's awful. And it's gone." or opening your hands and breathing
+    out lowers it. Hesketh describes saying "it's gone" again every time he catches himself
+    arguing (turning the mind). Is the framing clear that accepting isn't approving or giving
+    up, and that grief still belongs? Fen admits he joked through hard years so he wouldn't
+    have to feel them. (knots `into_shed`, `stay_with_it`; `fight`, `accept` and `grief` in
+    `src/logic/meter.ts`)

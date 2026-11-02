@@ -13,7 +13,7 @@ export type TimeOfDay = "afternoon" | "sunset" | "night" | "morning";
 
 export interface WorldState {
   time: TimeOfDay;
-  location: "square" | "edge" | "cave" | "lane";
+  location: "square" | "edge" | "cave" | "lane" | "home" | "mill" | "coast" | "shed";
   form: "person" | "shell";
   posture: "upright" | "neutral" | "slumped";
   faceHot: boolean;
@@ -35,15 +35,32 @@ export interface WorldState {
   pull: boolean;
   /** Carrying Ash's candle jar: dark lanes can be walked. */
   hasLight: boolean;
-  /** Chapter: 1 the fall, 2 the morning after, 3 the storm. */
-  level: 1 | 2 | 3;
-  weather: "clear" | "storm";
+  /** Chapter: 1 the fall, 2 the morning after, 3 the storm, 4 opening day, 5 the first snow, 6 the tide. */
+  level: Level;
+  weather: "clear" | "storm" | "snow";
+  /** Scenery that comes and goes with the story (names of PROPS in layout.ts). */
+  props: string[];
+  /** People the story has moved: a world x, or null for gone. Overrides where they'd usually stand. */
+  placed: Partial<Record<CharacterId, number | null>>;
   /** In the grip of the storm's panic wave, before the body comes down. */
   panic: boolean;
   /** Lanterns the wind took. */
   lanternsLost: number;
   ended: boolean;
 }
+
+export type Level = 1 | 2 | 3 | 4 | 5 | 6;
+export const LEVELS: readonly Level[] = [1, 2, 3, 4, 5, 6];
+const LOCATIONS: readonly WorldState["location"][] = ["square", "edge", "cave", "lane", "home", "mill", "coast", "shed"];
+
+/** Where each later chapter starts, and what time and weather it is. */
+const CHAPTER_START: Record<Exclude<Level, 1>, Pick<WorldState, "location" | "time" | "weather">> = {
+  2: { location: "lane", time: "morning", weather: "clear" },
+  3: { location: "square", time: "night", weather: "clear" },
+  4: { location: "mill", time: "morning", weather: "clear" },
+  5: { location: "lane", time: "sunset", weather: "snow" },
+  6: { location: "coast", time: "afternoon", weather: "clear" },
+};
 
 export function initialWorld(): WorldState {
   return {
@@ -67,6 +84,8 @@ export function initialWorld(): WorldState {
     weather: "clear",
     panic: false,
     lanternsLost: 0,
+    props: [],
+    placed: {},
     ended: false,
   };
 }
@@ -113,6 +132,10 @@ export const WORLD_EVENTS = new Set([
   "wave",
   "clear",
   "lose_lantern",
+  "prop",
+  "place",
+  "go",
+  "nightfall_snow",
 ]);
 
 export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
@@ -181,9 +204,10 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
     case "mend":
       return { ...w, heirloom: "mended" };
     case "chapter": {
-      const level = Number(ev.arg);
-      if (level !== 2 && level !== 3) throw new Error(`Unknown chapter: ${ev.arg}`);
+      const level = Number(ev.arg) as Level;
+      if (!LEVELS.includes(level) || level === 1) throw new Error(`Unknown chapter: ${ev.arg}`);
       // Each chapter starts from a festival that went ahead, whatever happened before.
+      // By chapter five it's winter, and the lanterns are back in the workshop.
       return {
         ...w,
         level,
@@ -192,12 +216,35 @@ export function applyWorldEvent(w: WorldState, ev: GameEvent): WorldState {
         form: "person",
         faceHot: false,
         posture: "neutral",
-        lanterns: "hung",
+        lanterns: level >= 5 ? "workshop" : "hung",
         lanternsHung: w.lanternsHung || 12,
-        location: level === 2 ? "lane" : "square",
-        time: level === 2 ? "morning" : "night",
+        hasLight: false,
+        darkness: 0,
+        panic: false,
+        props: [],
+        placed: {},
         faces: {},
+        ...CHAPTER_START[level],
       };
+    }
+    case "prop": {
+      // arg is "on:name" or "off:name"
+      const [onOff, name] = (ev.arg ?? "").split(":");
+      if ((onOff !== "on" && onOff !== "off") || !name) throw new Error(`prop needs on:name or off:name, got ${ev.arg}`);
+      const others = w.props.filter((p) => p !== name);
+      return { ...w, props: onOff === "on" ? [...others, name] : others };
+    }
+    case "place": {
+      // arg is "id:x" or "id:off"
+      const [id, where] = (ev.arg ?? "").split(":");
+      if (!isCharacterId(id) || !where) throw new Error(`place needs id:x or id:off, got ${ev.arg}`);
+      const x = where === "off" ? null : Number(where);
+      if (x !== null && !Number.isFinite(x)) throw new Error(`Bad place: ${ev.arg}`);
+      return { ...w, placed: { ...w.placed, [id]: x } };
+    }
+    case "go": {
+      if (!LOCATIONS.includes(ev.arg as WorldState["location"])) throw new Error(`Unknown place to go: ${ev.arg}`);
+      return { ...w, location: ev.arg as WorldState["location"], form: "person" };
     }
     case "sunset":
       return { ...w, time: "sunset" };

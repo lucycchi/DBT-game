@@ -6,12 +6,14 @@ import type { GameState } from "./logic/state";
 import type { Variant } from "./logic/facts";
 
 const KEY = "lantern-night:save";
+export type SaveChapter = 2 | 3 | 4 | 5 | 6;
+const CHAPTERS: readonly number[] = [2, 3, 4, 5, 6];
 const VERSION = 1;
 
 export interface SaveGame {
   version: typeof VERSION;
   /** The chapter the save leads into. */
-  chapter: 2 | 3;
+  chapter: SaveChapter;
   variant: Variant;
   /** Ink story state, from Engine.saveState(). */
   story: string;
@@ -48,7 +50,7 @@ export function readSave(store: Storage | null = storage()): SaveGame | null {
     if (!raw) return null;
     const save = JSON.parse(raw) as SaveGame;
     // A save from an older build may not match the story any more; ignore it.
-    if (save.version !== VERSION || (save.chapter !== 2 && save.chapter !== 3) || typeof save.story !== "string") return null;
+    if (save.version !== VERSION || !CHAPTERS.includes(save.chapter) || typeof save.story !== "string") return null;
     return save;
   } catch {
     return null;
@@ -66,4 +68,7 @@ export function clearSave(store: Storage | null = storage()): void {
 export const CHAPTER_NAMES: Record<SaveGame["chapter"], string> = {
   2: "chapter two: The morning after",
   3: "chapter three: The storm",
+  4: "chapter four: Opening day",
+  5: "chapter five: The first snow",
+  6: "chapter six: The tide",
 };

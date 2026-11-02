@@ -49,7 +49,7 @@ li.task.done .box { background: var(--accent); color: var(--background); }
 <h1>Characters</h1>
 <p>Everyone in the village has their own worries. Nobody exists to teach the player a lesson.</p>
 <h2>How they look</h2>
-<p>Round, plush animals (<code>src/ui/plush.ts</code>): You are a red panda, Mara a deer, Tobin an otter, Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. Each has their own face (eyes, brows, mouth, head shape) that fits who they are, and keeps their outfit colors and props (Mara's clipboard and scarf, Tobin's cap and apron, Wren's baker's hat, Nell's shawl, cane and flower, Ash's glasses).</p>
+<p>Round, plush animals (<code>src/ui/plush.ts</code>): You are a red panda, Mara a deer, Tobin an otter, Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. From chapter four: Iris (Ash's mother) a greyer bear in a plum coat, pearls and a small hat; Fen (Tobin's dad) an older otter in a yellow sou'wester and oilskin; Hesketh a white-grey hare with long drooping ears, round glasses and a cardigan; Hettie (Pip and Juno's mum) a mouse in a navy nurse's cape and white cap. Each has their own face (eyes, brows, mouth, head shape) that fits who they are, and keeps their outfit colors and props (Mara's clipboard and scarf, Tobin's cap and apron, Wren's baker's hat, Nell's shawl, cane and flower, Ash's glasses).</p>
 <p><strong>Feelings.</strong> Eleven, each changing eyes, brows, mouth and cheeks, adding a small sign by the head, and moving the body: calm (breathing), happy (sparkles, a bounce), laughing (a wobble), warm, surprised ("!", a hop), worried (a sweat drop, a sway), sad (a tear, a sink), upset (a puff of steam, a stomp), scared (a sweat drop, a shiver), embarrassed (blush lines, eyes down, shrinking smaller), tired ("zzz", a droop). While someone speaks, their mouth opens and closes with the words, in the village and in their portrait; everyone blinks.</p>
 <h2>Rules for writing dialogue</h2>
 <ul>
@@ -83,6 +83,9 @@ li.task.done .box { background: var(--accent); color: var(--background); }
 <tr><td>Festival evening</td><td>Everyone</td><td>Reactions depend on what you did and how fully you did it.</td></tr>
 <tr><td>Chapter two, the morning after</td><td>The bakers, Mara and Tobin ask for help; Nell, Ash and the kids</td><td>Each errand wears you down. Everyone takes "no" well. Ash offers to cover your stall; telling Ash or Mara before resting is how resting works.</td></tr>
 <tr><td>Chapter three, the storm</td><td>Pip (scared), Mara, Tobin, Nell, Ash</td><td>Pip panics too; once you're calm you can breathe with her. Mara asks for help tying the lanterns down.</td></tr>
+<tr><td>Chapter four, opening day</td><td>Morning: Ash, Tobin (by the wheel), Nell (at her old desk), then Iris. Evening party: everyone</td><td>Ash asks for every morning; how you answer shows on the chalkboard. Ash tells Iris they're staying.</td></tr>
+<tr><td>Chapter five, the first snow</td><td>Evening: Oda and the kids at your door, Nell through her door. Night: Pip and Juno, inside. Dawn: Hettie, the kids, Nell, Oda</td><td>Pip asks if her mum is stuck forever. How you spent the night shows on the window and in what the kids tell Hettie.</td></tr>
+<tr><td>Chapter six, the tide</td><td>Fen and Tobin on the quay, Hesketh at his shed; at dusk, all three by the harbour wall</td><td>Saving things from the tide, then whether anyone can say "it's gone." Fen stops joking.</td></tr>
 </tbody>
 </table>
 <h2>Conversations</h2>
@@ -121,19 +124,25 @@ li.task.done .box { background: var(--accent); color: var(--background); }
 <tr><td>2</td><td>Hesketh retires to the coast, Tobin's home town. He writes long letters about glue.</td></tr>
 <tr><td>Last spring</td><td>You come back. Wren's back starts to hurt; Oda starts getting up at three.</td></tr>
 <tr><td>This week</td><td>The 62nd festival (Nell has watched 61 from her step, and this is the next). Mara asks you to carry the lanterns.</td></tr>
+<tr><td>A week later</td><td>Chapter four: Ash opens Mae's in the old mill office. Iris comes from the city.</td></tr>
+<tr><td>Two months later</td><td>Chapter five: the first snow. The Haddon road shuts with Hettie on the wrong side of it.</td></tr>
+<tr><td>Early spring</td><td>Chapter six: the March storm has flooded Hesketh's shed in Saltmouth. You go with Tobin to save what's left.</td></tr>
 </tbody>
 </table>
 <pre class="mermaid">flowchart LR
   rosa["Rosa (gone five years)"] -- "first lantern, yellow door" --&gt; nell[Nell]
+  rosa -- "asked for the village's own lanterns" --&gt; hesketh
+  iris["Iris (Ash's mother)"] -- "parent" --&gt; ash
+  fen["Fen (Tobin's dad)"] -- "parent" --&gt; tobin
   rosa -- "grandmother" --&gt; mara[Mara]
   mara -- "the box of notes" --&gt; rosa
   you[You] -- "friends since you were ten" --- ash[Ash]
   nell -- "watched you grow up" --&gt; you
   ash -- "shop in the old mill office" --&gt; nell
-  tobin[Tobin] -- "apprentice" --&gt; hesketh["Hesketh (on the coast)"]
+  tobin[Tobin] -- "apprentice" --&gt; hesketh["Hesketh (Saltmouth)"]
   oda[Oda] -- "married" --- wren[Wren]
   wren -- "breakfast most mornings" --&gt; kids[Pip and Juno]
-  kids -- "their mum works nights" --&gt; mum["Mum (nurse in Haddon)"]
+  kids -- "their mum works nights" --&gt; mum["Hettie (nurse in Haddon)"]
   mara -- "asked you to carry the lanterns" --&gt; you</pre>
 <h3>You (red panda)</h3>
 <p>Kept loose on purpose, so any player can step in: no family details, no gender, no job.</p>
@@ -228,6 +237,10 @@ li.task.done .box { background: var(--accent); color: var(--background); }
 </ul>
 <p>told people it was losing the mill; it was never the mill. <strong>On screen</strong>: the door story in the afternoon; if you open Rosa's box with Mara after the storm, you can tell Nell, and she says this herself.</p>
 <ul>
+<li><strong>The mill, and Wil:</strong> she did the wages: a little brown envelope for every family, every</li>
+</ul>
+<p>Friday, so she knew what everyone earned, "which is why nobody ever argued with me." Wil worked the millstones and read to her out loud on snow nights. After he died, she did the wages in her head on long nights: "It gave the night somewhere to go." <strong>On screen</strong>, chapters four and five.</p>
+<ul>
 <li><strong>Who she is now:</strong> has watched every festival from her step, without knowing they began</li>
 </ul>
 <p>for her. Dry, unhurried, notices everything. Doesn't give advice; tells stories where she got it wrong. After hearing the truth, she plans to take Mara something yellow.</p>
@@ -251,6 +264,58 @@ li.task.done .box { background: var(--accent); color: var(--background); }
 <li><strong>Who they are:</strong> steady about other people's feelings and much less steady about their own;</li>
 </ul>
 <p>only admits being scared if you ask. Pronouns: they/them.</p>
+<ul>
+<li><strong>Opening day (chapter four):</strong> the tea room is called Mae's, after their gran, who ran the</li>
+</ul>
+<p>cart for forty years "and never once had a chair" (now there are twenty-two, none matching). Ash panics and asks you to run the counter every morning. They've never once told their mother no in six years; with your help (or without it) they finally do.</p>
+<h3>Iris (bear, from chapter four)</h3>
+<ul>
+<li><strong>Who:</strong> Ash's mother, about sixty, from the city. Runs the family tea company: forty shops.</li>
+</ul>
+<p>Polished, brisk, loves Ash, and has been calling the cart "a phase" for six years.</p>
+<ul>
+<li><strong>Her mother:</strong> Mae, Ash's gran, ran the village tea cart for forty years. Iris spent all</li>
+</ul>
+<p>of them trying to get her to sell it. "Ash is so like her it frightens me a little."</p>
+<ul>
+<li><strong>On opening day:</strong> comes to talk Ash out of it. Hears no, finally, says nothing for a long</li>
+</ul>
+<p>moment, and asks for a cup of the orange tea Ash calls Lantern. Stays for three pots. Calls it "rather good tea", which from her is a parade.</p>
+<h3>Fen (otter, from chapter six)</h3>
+<ul>
+<li><strong>Who:</strong> Tobin's dad, a fisherman in Saltmouth, in his fifties. His boat is the Marigold,</li>
+</ul>
+<p>older than Tobin: "the only thing that's never once laughed at my jokes."</p>
+<ul>
+<li><strong>The empty years:</strong> three winters the fish didn't come and they nearly lost the house. Fen</li>
+</ul>
+<p>joked about every bill; Tobin's mum did the crying for both of them. He knows that wasn't fair on her.</p>
+<ul>
+<li><strong>In chapter six:</strong> jokes about the flooded shed until Tobin snaps at him. Then, for once,</li>
+</ul>
+<p>stops, says "I couldn't stand still in it," and says sorry. "Not great. Honestly. That's the first time I've said that in about thirty years."</p>
+<h3>Hesketh (hare, from chapter six)</h3>
+<ul>
+<li><strong>Who:</strong> the old lantern-maker, eighty-six. Opened the workshop on Market Street forty years</li>
+</ul>
+<p>ago when Rosa asked him to give the village lanterns of its own; made every mould himself. Retired to Saltmouth two years ago, to a shed on the shingle where he kept the originals.</p>
+<ul>
+<li><strong>The sea:</strong> he moved the moulds up a shelf in the autumn; the March storm came up two. He</li>
+</ul>
+<p>was angry for a week, "then angry at being angry, which is a waste of a good week." He says "it's gone" every time part of him says "but it shouldn't be," like leaning on a tiller: "you don't do it once."</p>
+<ul>
+<li><strong>Secrets:</strong> Rosa made him promise not to tell anyone about the first lantern. He's glad</li>
+</ul>
+<p>someone else broke it: "I'm too old to break promises. I don't have the knees."</p>
+<h3>Hettie (mouse, from chapter five)</h3>
+<ul>
+<li><strong>Who:</strong> Pip and Juno's mum, a nurse on nights at the infirmary in Haddon. Sings in the car,</li>
+</ul>
+<p>badly; does all the voices when she reads; smells of the hand soap at work.</p>
+<ul>
+<li><strong>The snow night:</strong> stuck at the infirmary with her coat on, sitting by the door; every car</li>
+</ul>
+<p>she thought was the plough. She made tea for the night porter and did a crossword she already knew the answers to. Rides home at dawn in the plough, on a bag of grit.</p>
 <h2>Passing remarks</h2>
 <p>One-liners villagers say as you walk by (<code>src/game/barks.ts</code>), different in each part of the story. Under the shame haze, only people you've found out about make friendly remarks. Nobody chats during the storm or on the night you hid.</p>
 </main>

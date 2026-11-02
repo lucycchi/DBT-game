@@ -12,9 +12,10 @@ export interface GameEvent {
 // against the pull to hide. mend/hang: hands-on puzzles. chain: look back.
 // checkin: does the guilt about resting match what's happening? breathe: paced
 // breathing. secure: tie the lanterns down in the wind.
-// save: a save point between chapters.
-export type SceneName = "fit" | "approach" | "mend" | "hang" | "chain" | "checkin" | "breathe" | "secure" | "save";
-const SCENES: readonly SceneName[] = ["fit", "approach", "mend", "hang", "chain", "checkin", "breathe", "secure", "save"];
+// save: a save point between chapters. sayit: put together what you'll say
+// when asked for more than you can give. tide: save what you can from the shed.
+export type SceneName = "fit" | "approach" | "mend" | "hang" | "chain" | "checkin" | "breathe" | "secure" | "save" | "sayit" | "tide";
+const SCENES: readonly SceneName[] = ["fit", "approach", "mend", "hang", "chain", "checkin", "breathe", "secure", "save", "sayit", "tide"];
 
 export interface ParsedTags {
   events: GameEvent[];

@@ -5,7 +5,11 @@ Everyone in the village has their own worries. Nobody exists to teach the player
 ## How they look
 
 Round, plush animals (`src/ui/plush.ts`): You are a red panda, Mara a deer, Tobin an otter,
-Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. Each
+Wren a goat, Oda a badger, Pip and Juno mice (Juno has a bow), Nell a sheep, Ash a bear. From
+chapter four: Iris (Ash's mother) a greyer bear in a plum coat, pearls and a small hat; Fen
+(Tobin's dad) an older otter in a yellow sou'wester and oilskin; Hesketh a white-grey hare with
+long drooping ears, round glasses and a cardigan; Hettie (Pip and Juno's mum) a mouse in a
+navy nurse's cape and white cap. Each
 has their own face (eyes, brows, mouth, head shape) that fits who they are, and keeps their
 outfit colors and props (Mara's clipboard and scarf, Tobin's cap and apron, Wren's baker's
 hat, Nell's shawl, cane and flower, Ash's glasses).
@@ -69,6 +73,9 @@ rock. Ash treats rest as allowed and is still glad when you come back.
 | Festival evening | Everyone | Reactions depend on what you did and how fully you did it. |
 | Chapter two, the morning after | The bakers, Mara and Tobin ask for help; Nell, Ash and the kids | Each errand wears you down. Everyone takes "no" well. Ash offers to cover your stall; telling Ash or Mara before resting is how resting works. |
 | Chapter three, the storm | Pip (scared), Mara, Tobin, Nell, Ash | Pip panics too; once you're calm you can breathe with her. Mara asks for help tying the lanterns down. |
+| Chapter four, opening day | Morning: Ash, Tobin (by the wheel), Nell (at her old desk), then Iris. Evening party: everyone | Ash asks for every morning; how you answer shows on the chalkboard. Ash tells Iris they're staying. |
+| Chapter five, the first snow | Evening: Oda and the kids at your door, Nell through her door. Night: Pip and Juno, inside. Dawn: Hettie, the kids, Nell, Oda | Pip asks if her mum is stuck forever. How you spent the night shows on the window and in what the kids tell Hettie. |
+| Chapter six, the tide | Fen and Tobin on the quay, Hesketh at his shed; at dusk, all three by the harbour wall | Saving things from the tide, then whether anyone can say "it's gone." Fen stops joking. |
 
 ## Conversations
 
@@ -119,19 +126,25 @@ someone's trouble.
 | 2 | Hesketh retires to the coast, Tobin's home town. He writes long letters about glue. |
 | Last spring | You come back. Wren's back starts to hurt; Oda starts getting up at three. |
 | This week | The 62nd festival (Nell has watched 61 from her step, and this is the next). Mara asks you to carry the lanterns. |
+| A week later | Chapter four: Ash opens Mae's in the old mill office. Iris comes from the city. |
+| Two months later | Chapter five: the first snow. The Haddon road shuts with Hettie on the wrong side of it. |
+| Early spring | Chapter six: the March storm has flooded Hesketh's shed in Saltmouth. You go with Tobin to save what's left. |
 
 ```mermaid
 flowchart LR
   rosa["Rosa (gone five years)"] -- "first lantern, yellow door" --> nell[Nell]
+  rosa -- "asked for the village's own lanterns" --> hesketh
+  iris["Iris (Ash's mother)"] -- "parent" --> ash
+  fen["Fen (Tobin's dad)"] -- "parent" --> tobin
   rosa -- "grandmother" --> mara[Mara]
   mara -- "the box of notes" --> rosa
   you[You] -- "friends since you were ten" --- ash[Ash]
   nell -- "watched you grow up" --> you
   ash -- "shop in the old mill office" --> nell
-  tobin[Tobin] -- "apprentice" --> hesketh["Hesketh (on the coast)"]
+  tobin[Tobin] -- "apprentice" --> hesketh["Hesketh (Saltmouth)"]
   oda[Oda] -- "married" --- wren[Wren]
   wren -- "breakfast most mornings" --> kids[Pip and Juno]
-  kids -- "their mum works nights" --> mum["Mum (nurse in Haddon)"]
+  kids -- "their mum works nights" --> mum["Hettie (nurse in Haddon)"]
   mara -- "asked you to carry the lanterns" --> you
 ```
 
@@ -222,6 +235,11 @@ Kept loose on purpose, so any player can step in: no family details, no gender, 
   told people it was losing the mill; it was never the mill. **On screen**: the door story in
   the afternoon; if you open Rosa's box with Mara after the storm, you can tell Nell, and she
   says this herself.
+- **The mill, and Wil:** she did the wages: a little brown envelope for every family, every
+  Friday, so she knew what everyone earned, "which is why nobody ever argued with me." Wil
+  worked the millstones and read to her out loud on snow nights. After he died, she did the
+  wages in her head on long nights: "It gave the night somewhere to go." **On screen**,
+  chapters four and five.
 - **Who she is now:** has watched every festival from her step, without knowing they began
   for her. Dry, unhurried, notices everything. Doesn't give advice; tells stories where she
   got it wrong. After hearing the truth, she plans to take Mara something yellow.
@@ -241,6 +259,51 @@ Kept loose on purpose, so any player can step in: no family details, no gender, 
   it will be "just okay".
 - **Who they are:** steady about other people's feelings and much less steady about their own;
   only admits being scared if you ask. Pronouns: they/them.
+- **Opening day (chapter four):** the tea room is called Mae's, after their gran, who ran the
+  cart for forty years "and never once had a chair" (now there are twenty-two, none
+  matching). Ash panics and asks you to run the counter every morning. They've never once
+  told their mother no in six years; with your help (or without it) they finally do.
+
+### Iris (bear, from chapter four)
+
+- **Who:** Ash's mother, about sixty, from the city. Runs the family tea company: forty shops.
+  Polished, brisk, loves Ash, and has been calling the cart "a phase" for six years.
+- **Her mother:** Mae, Ash's gran, ran the village tea cart for forty years. Iris spent all
+  of them trying to get her to sell it. "Ash is so like her it frightens me a little."
+- **On opening day:** comes to talk Ash out of it. Hears no, finally, says nothing for a long
+  moment, and asks for a cup of the orange tea Ash calls Lantern. Stays for three pots. Calls
+  it "rather good tea", which from her is a parade.
+
+### Fen (otter, from chapter six)
+
+- **Who:** Tobin's dad, a fisherman in Saltmouth, in his fifties. His boat is the Marigold,
+  older than Tobin: "the only thing that's never once laughed at my jokes."
+- **The empty years:** three winters the fish didn't come and they nearly lost the house. Fen
+  joked about every bill; Tobin's mum did the crying for both of them. He knows that wasn't
+  fair on her.
+- **In chapter six:** jokes about the flooded shed until Tobin snaps at him. Then, for once,
+  stops, says "I couldn't stand still in it," and says sorry. "Not great. Honestly. That's the
+  first time I've said that in about thirty years."
+
+### Hesketh (hare, from chapter six)
+
+- **Who:** the old lantern-maker, eighty-six. Opened the workshop on Market Street forty years
+  ago when Rosa asked him to give the village lanterns of its own; made every mould himself.
+  Retired to Saltmouth two years ago, to a shed on the shingle where he kept the originals.
+- **The sea:** he moved the moulds up a shelf in the autumn; the March storm came up two. He
+  was angry for a week, "then angry at being angry, which is a waste of a good week." He
+  says "it's gone" every time part of him says "but it shouldn't be," like leaning on a
+  tiller: "you don't do it once."
+- **Secrets:** Rosa made him promise not to tell anyone about the first lantern. He's glad
+  someone else broke it: "I'm too old to break promises. I don't have the knees."
+
+### Hettie (mouse, from chapter five)
+
+- **Who:** Pip and Juno's mum, a nurse on nights at the infirmary in Haddon. Sings in the car,
+  badly; does all the voices when she reads; smells of the hand soap at work.
+- **The snow night:** stuck at the infirmary with her coat on, sitting by the door; every car
+  she thought was the plough. She made tea for the night porter and did a crossword she
+  already knew the answers to. Rides home at dawn in the plough, on a bag of grit.
 
 ## Passing remarks
 

@@ -10,12 +10,12 @@ import type { HotspotId } from "../logic/facts";
 import type { WorldState } from "../logic/world";
 import type { Sound } from "../audio/sound";
 import { pickBark } from "./barks";
-import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, WINDOW_LIGHTS, SKIES } from "./art";
+import { allTextures, CHAR_DISPLAY_SCALE, CHAR_ORIGIN, charKey, charTextureSVG, svgUri, WHEEL, WINDOW_LIGHTS, SKIES } from "./art";
 import { Puppet } from "./puppet";
 import type { Frame } from "../ui/plush";
 import {
-  AREAS, DOORS, EDGE_X, FOUNTAIN_X, GROUND_Y, groundY, HOOKS, INTERACT_RANGE, INTERIOR, laneBlocked, NPC_SPOTS,
-  phaseOf, PLAYER_SPOTS, USABLES, VIEW_H, VIEW_W, WORLD_W, ZONES, areaAt, type Area,
+  AREAS, DOORS, EDGE_X, FOUNTAIN_X, GROUND_Y, groundY, HOOKS, INTERACT_RANGE, laneBlocked, NPC_SPOTS,
+  phaseOf, PLAYER_SPOTS, PROPS, REGIONS, WORLD_W, regionAt, SHED, SHED_ITEMS, USABLES, VIEW_H, VIEW_W, ZONES, areaAt, type Area, type Region,
 } from "./layout";
 
 type Npc = Exclude<CharacterId, "you">;
@@ -34,6 +34,19 @@ const NPC_FACT: Partial<Record<Npc, HotspotId>> = {
 const WALK_SPEED = 270;
 const PULL_DRIFT = 70;
 
+/** Village areas that have a snowy version for chapter five. */
+const SNOWY_AREAS = new Set<Area["id"]>(["lane", "street", "square", "hill"]);
+/** Chapter six: how long the tide takes to come all the way in, in seconds. */
+const TIDE_SECONDS = 38;
+const TIDE_TOP = GROUND_Y - 150;
+
+export interface TideResult {
+  /** Ids of the things carried out of the shed before the water reached them. */
+  saved: string[];
+  /** How many times the player heaved at the sandbags against the tide. */
+  fought: number;
+}
+
 export interface ApproachResult {
   reached: boolean;
   headUp: boolean;
@@ -49,6 +62,21 @@ export interface SceneHooks {
   touch: boolean;
   /** Story events caused by the player's body during the approach (posture, effort). */
   onApproachEvent(name: string, arg?: string): void;
+}
+
+/** The sky to show: by chapter, place, weather and time of day. */
+function skyFor(w: WorldState, region: Region["id"]): string {
+  if (w.weather === "storm") return "storm";
+  if (w.level === 5) return w.time === "morning" ? "winter-dawn" : w.time === "night" ? "winter-night" : "winter-sunset";
+  if (region === "coast") return w.time === "sunset" || w.time === "night" ? "coast-dusk" : "coast";
+  if (region === "mill" && w.time === "morning") return "mill";
+  return w.time;
+}
+
+function farFor(w: WorldState, region: Region["id"]): string {
+  if (region === "coast") return "far-coast";
+  if (region === "mill") return "far-mill";
+  return w.weather === "snow" ? "far-snow" : "far";
 }
 
 interface Target {
@@ -109,11 +137,21 @@ export class WorldScene extends Phaser.Scene {
   private stepClock = 0;
   private area: Area = AREAS[0];
   private lastLocation: WorldState["location"] | null = null;
+  private lastLevel = 1;
   private currentSky = "";
   private headUpButton = false;
   private approaching = false;
   private hanging = false;
   private rain!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private snow!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private areaImages = new Map<Area["id"], Phaser.GameObjects.Image>();
+  private props = new Map<string, Phaser.GameObjects.Image>();
+  private wheel!: Phaser.GameObjects.Image;
+  private shedItems = new Map<string, Phaser.GameObjects.Image>();
+  private water!: Phaser.GameObjects.Rectangle;
+  private region: Region = REGIONS[0];
+  private tiding = false;
+  private tideAction: (() => void) | null = null;
   private gust = 0;
   /** Ignore the key press that closed the dialogue, which Phaser sees a moment later. */
   private unlockedAt = 0;
@@ -144,6 +182,12 @@ export class WorldScene extends Phaser.Scene {
     this.actionLabel = null;
     this.hookAction = null;
     this.lastBark = -99999;
+    this.areaImages = new Map();
+    this.props = new Map();
+    this.shedItems = new Map();
+    this.region = REGIONS[0];
+    this.tiding = false;
+    this.tideAction = null;
   }
 
   preload() {
@@ -158,7 +202,14 @@ export class WorldScene extends Phaser.Scene {
     this.skyA = this.add.image(0, 0, "sky-afternoon").setOrigin(0).setScrollFactor(0).setDisplaySize(VIEW_W, VIEW_H).setDepth(-30);
     this.skyB = this.add.image(0, 0, "sky-afternoon").setOrigin(0).setScrollFactor(0).setDisplaySize(VIEW_W, VIEW_H).setDepth(-29).setAlpha(0);
     this.far = this.add.tileSprite(0, 0, VIEW_W, VIEW_H, "far").setOrigin(0).setScrollFactor(0).setDepth(-20);
-    for (const a of AREAS) this.add.image(a.x0, 0, `area-${a.id}`).setOrigin(0).setDepth(-10);
+    for (const a of AREAS) this.areaImages.set(a.id, this.add.image(a.x0, 0, `area-${a.id}`).setOrigin(0).setDepth(-10));
+    this.wheel = this.add.image(WHEEL.x, WHEEL.y, "waterwheel").setDepth(-9);
+    // Scenery the story switches on and off, and the light some of it gives.
+    for (const [name, p] of Object.entries(PROPS)) {
+      this.props.set(name, this.add.image(p.x, p.y, `prop-${name}`).setOrigin(0.5, p.center ? 0.5 : 1).setDepth(p.depth ?? -3).setVisible(false));
+    }
+    for (const item of SHED_ITEMS) this.shedItems.set(item.id, this.add.image(item.x, item.y, `shed-item-${item.id}`).setOrigin(0.5, 1).setDepth(-2));
+    this.water = this.add.rectangle(SHED.x0 - 60, VIEW_H, 13800 - SHED.x0 + 60, 0, 0x5f9fc4, 0.72).setOrigin(0, 1).setDepth(6).setVisible(false);
 
     // Ambient life: chimney smoke, fountain spray, fireflies on the hill.
     for (const [x, y] of [[332, GROUND_Y - 300], [666, GROUND_Y - 262], [1600, GROUND_Y - 280]]) {
@@ -218,6 +269,17 @@ export class WorldScene extends Phaser.Scene {
       tint: 0xb8c8e0,
       emitting: false,
     }).setScrollFactor(0).setDepth(36);
+    this.snow = this.add.particles(0, -20, "dot", {
+      x: { min: -100, max: VIEW_W + 100 },
+      speedY: { min: 40, max: 90 },
+      speedX: { min: -30, max: 20 },
+      scale: { min: 0.15, max: 0.45 },
+      alpha: { start: 0.9, end: 0.5 },
+      lifespan: 9000,
+      frequency: 40,
+      tint: 0xffffff,
+      emitting: false,
+    }).setScrollFactor(0).setDepth(36);
     this.prompt = this.add.text(0, 0, "", { fontFamily: "Georgia, serif", fontSize: "20px", color: "#2a1a05", backgroundColor: "#f6e7c8", padding: { x: 10, y: 6 } }).setOrigin(0.5, 1).setDepth(50).setVisible(false);
     // Tapping the prompt does what it says.
     this.prompt.setInteractive({ useHandCursor: true }).on("pointerdown", (_: unknown, __: unknown, ___: unknown, ev: Phaser.Types.Input.EventData) => {
@@ -233,11 +295,21 @@ export class WorldScene extends Phaser.Scene {
     for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].on("down", () => this.interact());
 
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
-      if (this.locked && !this.approaching && !this.hanging) return;
+      if (this.locked && !this.approaching && !this.hanging && !this.tiding) return;
       this.hooks.sound.unlock();
       this.moveTo = p.worldX;
       this.pendingAction = null;
       if (this.approaching) return;
+      // In the shed: tapping something walks there and saves it (or heaves at the sandbags).
+      if (this.tiding) {
+        const spots = [...SHED_ITEMS.map((i) => i.x), PROPS.sandbags.x];
+        const near = spots.find((x) => Math.abs(x - p.worldX) < 50);
+        if (near !== undefined) {
+          this.moveTo = near;
+          this.pendingAction = () => this.tideAction?.();
+        }
+        return;
+      }
       // Tapping a hook (lantern challenges), or something you can use, walks there and does it.
       if (this.hanging) {
         const i = HOOKS.findIndex((h) => Math.abs(h.x - p.worldX) < 45 && p.worldY < groundY(h.x));
@@ -247,15 +319,20 @@ export class WorldScene extends Phaser.Scene {
         }
         return;
       }
-      const spots = [...this.targets.filter((t) => !t.auto).map((t) => t.x), ...DOORS.map((d) => d.x)];
+      const spots = [...this.targets.filter((t) => !t.auto).map((t) => t.x), ...DOORS.filter((d) => !d.when || d.when(this.world)).map((d) => d.x)];
       const near = spots.find((x) => Math.abs(x - p.worldX) < 70);
       if (near !== undefined) this.walkToAndInteract(near);
     });
 
-    this.cameras.main.setBounds(0, 0, WORLD_W, VIEW_H);
+    this.cameras.main.setBounds(this.region.x0, 0, this.region.x1 - this.region.x0, VIEW_H);
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.applyState(this.world);
-    this.player.x = 600;
+    // A new game starts on Lantern Lane; a resumed one where its chapter is.
+    this.teleport(this.world.level === 1 ? 600 : PLAYER_SPOTS[this.world.location]);
+    // applyState skips work until the scene is running, so note where the player starts here;
+    // the next change of place (a chapter starting, say) then moves them.
+    this.lastLocation = this.world.location;
+    this.lastLevel = this.world.level;
     this.ready?.(this);
   }
 
@@ -264,15 +341,21 @@ export class WorldScene extends Phaser.Scene {
   applyState(w: WorldState) {
     this.world = w;
     if (!this.sys?.isActive()) return;
-    if (w.location !== this.lastLocation) {
+    // A new place, or a new chapter, puts the player where that starts.
+    if (w.location !== this.lastLocation || w.level !== this.lastLevel) {
       if (this.lastLocation !== null) this.teleport(PLAYER_SPOTS[w.location]);
       this.lastLocation = w.location;
+      this.lastLevel = w.level;
     }
     const flashback = w.lens === "shame";
-    this.setSky(w.weather === "storm" ? "storm" : w.time);
+    this.setSky(skyFor(w, this.region.id));
+    this.far.setTexture(farFor(w, this.region.id));
     const storm = w.weather === "storm";
     if (storm && !this.rain.emitting) this.rain.start();
     if (!storm && this.rain.emitting) this.rain.stop();
+    this.updateSnowfall();
+    for (const [id, img] of this.areaImages) img.setTexture(w.weather === "snow" && SNOWY_AREAS.has(id) ? `area-${id}-snow` : `area-${id}`);
+    for (const [name, img] of this.props) img.setVisible(w.props.includes(name));
 
     // Lanterns: on the table, in your arms, on the ground, or on the string.
     this.tablePile.setVisible(w.lanterns === "workshop");
@@ -307,7 +390,8 @@ export class WorldScene extends Phaser.Scene {
     // Villagers
     const spots = NPC_SPOTS[phaseOf(w, this.approaching)];
     for (const [id, n] of this.npcs) {
-      const x = spots[id];
+      const moved = w.placed[id];
+      const x = moved === null ? undefined : moved ?? spots[id];
       const here = x !== undefined;
       n.img.setVisible(here);
       n.shadow.setVisible(here);
@@ -323,6 +407,13 @@ export class WorldScene extends Phaser.Scene {
 
     this.tweens.add({ targets: this.vignette, alpha: flashback ? 0.85 : 0, duration: 900 });
     this.hooks.sound.setMood(this.moodFor(w));
+  }
+
+  /** Snow falls outdoors in chapter five, not inside the house. */
+  private updateSnowfall() {
+    const on = this.world.weather === "snow" && this.region.id === "village";
+    if (on && !this.snow.emitting) this.snow.start();
+    if (!on && this.snow.emitting) this.snow.stop();
   }
 
   /** Offer story choices that live in the world. Picking one calls onPick. */
@@ -561,6 +652,81 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Chapter six: the tide comes back into Hesketh's shed. Carry out what you can
+   * before the water reaches it, or heave at the sandbags (the water comes anyway).
+   */
+  runTide(onFight: () => void): Promise<TideResult> {
+    this.tiding = true;
+    this.teleport(12720);
+    this.water.setVisible(true).setSize(this.water.width, 0);
+    const saved: string[] = [];
+    const lost = new Set<string>();
+    let fought = 0;
+    let heaving = 0;
+    let elapsed = 0;
+    const level = () => VIEW_H - (VIEW_H - TIDE_TOP) * Math.min(1, elapsed / TIDE_SECONDS);
+    const crate = PROPS.crate;
+    this.setLocked(false);
+    return new Promise((resolve) => {
+      const finish = () => {
+        this.events.off("update", tick);
+        this.tiding = false;
+        this.tideAction = null;
+        this.hidePrompt();
+        this.setLocked(true);
+        this.tweens.add({ targets: this.water, alpha: 0, duration: 1500, onComplete: () => this.water.setVisible(false).setAlpha(0.72) });
+        resolve({ saved, fought });
+      };
+      const nearest = () => {
+        const item = SHED_ITEMS.find((i) => Math.abs(i.x - this.player.x) < 45 && !saved.includes(i.id) && !lost.has(i.id));
+        if (item) return { kind: "item" as const, item };
+        if (Math.abs(PROPS.sandbags.x - this.player.x) < 55) return { kind: "bags" as const };
+        return null;
+      };
+      this.tideAction = () => {
+        if (heaving > 0) return;
+        const n = nearest();
+        if (!n) return;
+        if (n.kind === "item") {
+          saved.push(n.item.id);
+          this.hooks.sound.play("pickup");
+          const img = this.shedItems.get(n.item.id)!;
+          this.tweens.add({ targets: img, x: crate.x - 30 + (saved.length % 3) * 30, y: crate.y - 40 - Math.floor((saved.length - 1) / 3) * 26, duration: 600, ease: "Quad.out" });
+        } else {
+          fought++;
+          heaving = 1.1;
+          onFight();
+          this.hooks.sound.play("trip", { volume: 0.4 });
+          this.cameras.main.shake(180, 0.004);
+        }
+      };
+      const tick = (_t: number, dms: number) => {
+        const dt = dms / 1000;
+        elapsed += dt;
+        if (heaving > 0) {
+          heaving -= dt;
+          this.moveTo = null;
+        }
+        const top = level();
+        this.water.setSize(this.water.width, VIEW_H - top);
+        for (const item of SHED_ITEMS) {
+          if (saved.includes(item.id) || lost.has(item.id) || top > item.y - 12) continue;
+          lost.add(item.id);
+          this.hooks.sound.play("shell", { volume: 0.4 });
+          this.tweens.add({ targets: this.shedItems.get(item.id)!, alpha: 0, y: item.y + 30, duration: 900 });
+        }
+        const n = nearest();
+        if (heaving > 0) this.showPrompt(PROPS.sandbags.x, "Heaving...");
+        else if (n?.kind === "item") this.showPrompt(n.item.x, `Carry out ${n.item.label}`, () => this.tideAction?.());
+        else if (n?.kind === "bags") this.showPrompt(PROPS.sandbags.x, "Hold back the water", () => this.tideAction?.());
+        else this.hidePrompt();
+        if (elapsed >= TIDE_SECONDS + 2) finish();
+      };
+      this.events.on("update", tick);
+    });
+  }
+
   sparkle(x: number, y: number) {
     this.add.particles(x, y, "sparkle", { speed: { min: 60, max: 160 }, scale: { start: 0.6, end: 0 }, lifespan: 700, quantity: 14, emitting: false }).setDepth(45).explode(14);
   }
@@ -584,7 +750,8 @@ export class WorldScene extends Phaser.Scene {
 
   update(_t: number, dms: number) {
     const dt = dms / 1000;
-    if (!this.locked && !this.approaching) this.move(dt);
+    if (!this.locked && !this.approaching && !(this.tiding && this.moveTo === null && !this.keyHeld())) this.move(dt);
+    this.wheel.angle += dt * 18;
     this.player.y = groundY(this.player.x);
     this.playerShadow.setPosition(this.player.x, this.player.y);
     this.body.setFlipX(this.facing < 0);
@@ -616,8 +783,14 @@ export class WorldScene extends Phaser.Scene {
     if (area !== this.area) {
       this.area = area;
       this.hooks.onArea(area);
-      const interior = area.id === "workshop";
-      this.cameras.main.setBounds(interior ? INTERIOR.x0 : 0, 0, interior ? INTERIOR.x1 - INTERIOR.x0 : WORLD_W, VIEW_H);
+    }
+    const region = regionAt(this.player.x);
+    if (region !== this.region) {
+      this.region = region;
+      this.cameras.main.setBounds(region.x0, 0, region.x1 - region.x0, VIEW_H);
+      this.setSky(skyFor(this.world, region.id));
+      this.far.setTexture(farFor(this.world, region.id));
+      this.updateSnowfall();
     }
     this.far.tilePositionX = this.cameras.main.scrollX * 0.25;
     const fog = this.world.time === "morning" || this.world.time === "night" ? Math.min(0.92, 0.5 + this.world.darkness * 0.2) * Math.sign(this.world.darkness) * (this.world.hasLight ? 0.55 : 1) : 0;
@@ -626,8 +799,8 @@ export class WorldScene extends Phaser.Scene {
       n.bubble.setPosition(n.img.x, groundY(n.img.x) - 135);
       n.bark.setPosition(n.img.x, groundY(n.img.x) - 175);
     }
-    if (!this.locked && !this.approaching && !this.hanging) this.maybeBark();
-    if (!this.approaching && !this.hanging && !this.locked) this.updatePrompt();
+    if (!this.locked && !this.approaching && !this.hanging && !this.tiding) this.maybeBark();
+    if (!this.approaching && !this.hanging && !this.tiding && !this.locked) this.updatePrompt();
     this.drawDarkness();
   }
 
@@ -650,9 +823,10 @@ export class WorldScene extends Phaser.Scene {
     if (this.world.pull && !this.hanging) vx += PULL_DRIFT;
     if (vx !== 0) this.facing = vx < 0 ? -1 : 1;
     this.walking = vx !== 0 && (left || right || this.moveTo !== null);
-    const interior = this.player.x >= INTERIOR.x0;
-    let minX = interior ? INTERIOR.x0 + 260 : 40;
-    const maxX = interior ? INTERIOR.x1 - 260 : WORLD_W - 60;
+    const region = regionAt(this.player.x);
+    let minX: number = region.min;
+    const maxX: number = region.max;
+    const interior = region.id !== "village";
     if (!interior && laneBlocked(this.world)) minX = 1080;
     const before = this.player.x;
     this.player.x = Phaser.Math.Clamp(this.player.x + vx * dt, minX, maxX);
@@ -682,8 +856,12 @@ export class WorldScene extends Phaser.Scene {
     return best;
   }
 
+  private keyHeld() {
+    return this.keys.LEFT.isDown || this.keys.A.isDown || this.keys.RIGHT.isDown || this.keys.D.isDown;
+  }
+
   private nearestDoor() {
-    return DOORS.find((d) => Math.abs(d.x - this.player.x) < 60) ?? null;
+    return DOORS.find((d) => Math.abs(d.x - this.player.x) < 60 && (!d.when || d.when(this.world))) ?? null;
   }
 
   private nearestHook(): number {
@@ -723,6 +901,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private interact() {
+    if (this.tiding) return this.tideAction?.();
     if (this.locked || this.approaching || this.hanging) return;
     if (this.time.now - this.unlockedAt < 600) return;
     this.hooks.sound.unlock();
@@ -733,7 +912,7 @@ export class WorldScene extends Phaser.Scene {
       this.hooks.sound.play("door");
       this.cameras.main.fadeOut(180, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
-        this.teleport(door.to + (door.to > INTERIOR.x0 ? 40 : 0));
+        this.teleport(door.to);
         this.cameras.main.fadeIn(220, 0, 0, 0);
       });
     }
@@ -789,6 +968,15 @@ export class WorldScene extends Phaser.Scene {
   private teleport(x: number) {
     this.player.x = x;
     this.moveTo = null;
+    // Moving to another place: set its camera limits before centering on it.
+    const region = regionAt(x);
+    if (region !== this.region) {
+      this.region = region;
+      this.cameras.main.setBounds(region.x0, 0, region.x1 - region.x0, VIEW_H);
+      this.setSky(skyFor(this.world, region.id));
+      this.far.setTexture(farFor(this.world, region.id));
+      this.updateSnowfall();
+    }
     this.cameras.main.centerOn(x, VIEW_H / 2);
   }
 
@@ -804,6 +992,8 @@ export class WorldScene extends Phaser.Scene {
 
   private moodFor(w: WorldState) {
     if (w.weather === "storm") return w.panic ? ("shame" as const) : ("night" as const);
+    if (w.level === 5) return w.time === "morning" ? ("day" as const) : ("night" as const);
+    if (w.level === 4 && w.time === "night") return "festival" as const;
     if (w.form === "shell" || (w.location === "cave" && w.level === 2)) return "hollow" as const;
     if (w.lens === "shame") return "shame" as const;
     if (w.time === "night") return w.lanterns === "hung" ? ("festival" as const) : ("night" as const);
@@ -824,7 +1014,7 @@ export class WorldScene extends Phaser.Scene {
         this.skyB.setAlpha(0);
       },
     });
-    const tint = time === "night" || time === "storm" ? 0x55608a : time === "morning" ? 0xdde8ee : time === "sunset" ? 0xf0b8a0 : 0xffffff;
+    const tint = /night|storm/.test(time) ? 0x55608a : /morning|dawn/.test(time) ? 0xdde8ee : /sunset|dusk/.test(time) ? 0xf0b8a0 : 0xffffff;
     this.far.setTint(tint);
   }
 
@@ -874,8 +1064,14 @@ export class WorldScene extends Phaser.Scene {
 
   private drawDarkness() {
     const w = this.world;
-    const festival = w.time === "night" && w.lanterns === "hung";
-    const alpha = w.time === "night" ? (festival ? 0.72 - w.squareLight * 0.2 + (w.weather === "storm" ? 0.1 : 0) : 0.8) : w.form === "shell" ? 0.35 : w.time === "sunset" ? 0.2 : 0;
+    const festival = w.time === "night" && w.lanterns === "hung" && w.level <= 3;
+    const r = this.region.id;
+    let alpha = w.time === "night" ? (festival ? 0.72 - w.squareLight * 0.2 + (w.weather === "storm" ? 0.1 : 0) : 0.8) : w.form === "shell" ? 0.35 : w.time === "sunset" ? 0.2 : 0;
+    // Later chapters: the tea room's party is lantern-lit; the house in the power cut is candle-lit.
+    if (w.level === 4 && w.time === "night") alpha = 0.5;
+    if (r === "home" && w.time === "night") alpha = 0.72;
+    if (r === "home" && w.time === "sunset") alpha = 0.3;
+    if (r === "coast" && w.time === "sunset") alpha = 0.22;
     this.dark.clear();
     if (alpha <= 0) return;
     const cam = this.cameras.main;
@@ -888,6 +1084,13 @@ export class WorldScene extends Phaser.Scene {
     };
     // Rendering a scaled erase: draw the brush several times for bigger lights.
     for (const l of WINDOW_LIGHTS) erase(l.x, l.y, 1);
+    for (const [name, p] of Object.entries(PROPS)) {
+      if (!p.glow || !w.props.includes(name)) continue;
+      const img = this.props.get(name)!;
+      const cy = p.center ? p.y : p.y - img.height / 2;
+      // A wide prop (a string of lanterns) lights several spots along its length.
+      for (let i = 0; i < p.glow; i++) erase(p.x + (p.glow === 1 ? 0 : (i / (p.glow - 1) - 0.5) * img.width * 0.8), cy, 1);
+    }
     if (festival) HOOKS.forEach((h, i) => i < w.lanternsHung && (i % 2 === 0 || i === BRIGHTEST) && erase(h.x, h.y + 90, 1));
     if (w.hasLight || festival) erase(this.player.x, this.player.y - 70, 1);
   }

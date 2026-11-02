@@ -38,14 +38,19 @@ function checkTarget(c: StoryChoice, all: StoryChoice[], state: GameState, where
   const t = c.target;
   if (!t) return;
   const w = state.world;
-  const spots = NPC_SPOTS[phaseOf(w, false)];
+  // Where everyone usually stands now, with anyone the story has moved (or sent away) applied.
+  const spots: Partial<Record<CharacterId, number>> = { ...NPC_SPOTS[phaseOf(w, false)] };
+  for (const [id, x] of Object.entries(w.placed)) {
+    if (x === null) delete spots[id as CharacterId];
+    else spots[id as CharacterId] = x;
+  }
   const blocked = (x: number) => laneBlocked(w) && areaAt(x).id === "lane";
   if (t.kind === "talk") {
     const ids = [t.id, ...talkGroup(t.id)].filter((id): id is Exclude<CharacterId, "you"> => id !== "you");
-    const present = ids.filter((id) => spots[id] !== undefined);
+    const present = ids.filter((id) => spots[id as CharacterId] !== undefined);
     if (!present.length) problems.push({ where, what: `"${c.text}" asks you to talk to ${t.id}, who isn't anywhere in the village right now` });
     // Ash hands out the candle, so a dark lane is fine while you can still talk to Ash.
-    else if (present.every((id) => blocked(spots[id]!)) && !w.hasLight && !all.some((o) => o.target?.kind === "talk" && o.target.id === "ash"))
+    else if (present.every((id) => blocked(spots[id as CharacterId]!)) && !w.hasLight && !all.some((o) => o.target?.kind === "talk" && o.target.id === "ash"))
       problems.push({ where, what: `"${c.text}": ${t.id} is in the dark lane, but you have no light yet and nothing else to do might give you one` });
   } else if (t.kind === "use") {
     const u = USABLES[t.id];
@@ -58,6 +63,9 @@ function checkTarget(c: StoryChoice, all: StoryChoice[], state: GameState, where
   }
 }
 
+/** Things villagers remember from earlier chapters. */
+const MEMORIES = ["nell_not_me", "nell_door", "ash_shop", "tobin_fall", "tobin_shared", "mara_grandma", "mara_rests", "wren_back", "juno_counting", "carried_bread", "helped_pip", "mended", "rosa_notes", "told_nell", "oda_early", "tobin_offer"];
+
 interface WalkResult {
   steps: number;
   endedAs: string;
@@ -67,13 +75,17 @@ function walk(variant: Variant, start: string | null, seed: number, taken: Taken
   const rand = rng(seed);
   let state = initialState();
   const engine = new Engine(json, variant, () => state.meter.distress);
-  if (start) engine.startAt(start);
+  if (start) {
+    engine.startAt(start);
+    // Jumping into a later chapter: give it a random history of what the player did and heard before.
+    for (const v of MEMORIES) engine.setVar(v, rand() < 0.5);
+  }
   let steps = 0;
   let lastLines: string[] = [];
   const where = () => `${variant}/${start ?? "start"} seed ${seed}, step ${steps}: …${lastLines.slice(-2).join(" / ")}`;
 
   while (!engine.ended) {
-    if (++steps > 4000) {
+    if (++steps > 10000) {
       problems.push({ where: where(), what: "the walk never ended (possible loop with no way out)" });
       break;
     }
@@ -109,6 +121,24 @@ function walk(variant: Variant, start: string | null, seed: number, taken: Taken
         engine.setVar("reached", outcome.startsWith("reached"));
         engine.setVar("head_up", outcome === "reached, head up");
         engine.setVar("turned_back", outcome === "turned back");
+      }
+      if (s === "sayit") {
+        const [clear, kind, steady] = [rand() < 0.6, rand() < 0.6, rand() < 0.6];
+        outcome = `${clear ? "clear" : "unclear"}, ${kind ? "kind" : "not kind"}`;
+        engine.setVar("ask_answer", clear ? "clear" : rand() < 0.5 ? "vague" : "flat");
+        engine.setVar("ask_clear", clear);
+        engine.setVar("ask_kind", kind);
+        engine.setVar("ask_steady", steady);
+      }
+      if (s === "tide") {
+        const ids = ["notebooks", "small_mould", "tools", "photo", "red_mould"].filter(() => rand() < 0.5);
+        const fought = Math.floor(rand() * 5);
+        outcome = ids.length === 0 ? "saved nothing" : ids.length === 5 ? "saved everything" : "saved some";
+        engine.setVar("saved_count", ids.length);
+        engine.setVar("saved_red", ids.includes("red_mould"));
+        engine.setVar("saved_notebooks", ids.includes("notebooks"));
+        engine.setVar("fought", fought);
+        for (let i = 0; i < fought; i++) state = applyEvent(state, { name: "fight" });
       }
       if (s === "breathe") {
         const n = Math.floor(rand() * 5);
@@ -177,7 +207,10 @@ describe.skipIf(!process.env.EXPLORE)("exploring every choice", () => {
   const endings = new Set<string>();
   let walks = 0;
 
-  const starts: [Variant, string | null][] = [["main", null], ["promise", null], ["main", "start_day_two"], ["main", "start_storm"]];
+  const starts: [Variant, string | null][] = [
+    ["main", null], ["promise", null], ["main", "start_day_two"], ["main", "start_storm"],
+    ["main", "start_mill"], ["main", "start_snow"], ["main", "start_coast"], ["main", "start_mill"],
+  ];
   beforeAll(() => {
     let quiet = 0;
     // Keep walking until nothing new has been tried for a good while.
@@ -214,7 +247,8 @@ describe.skipIf(!process.env.EXPLORE)("exploring every choice", () => {
   });
 
   it("tries every challenge outcome and reaches every kind of ending", () => {
-    for (const s of ["fit: fits", "fit: doesn't", "checkin: fits", "checkin: doesn't", "approach: reached, head up", "approach: reached, head down", "approach: stayed at the edge", "approach: turned back", "breathe: 0 breaths", "breathe: 4 breaths", "hang: done", "mend: done", "secure: done", "chain: done", "save: done"]) {
+    for (const s of ["fit: fits", "fit: doesn't", "checkin: fits", "checkin: doesn't", "approach: reached, head up", "approach: reached, head down", "approach: stayed at the edge", "approach: turned back", "breathe: 0 breaths", "breathe: 4 breaths", "hang: done", "mend: done", "secure: done", "chain: done", "save: done",
+      "sayit: clear, kind", "sayit: unclear, not kind", "tide: saved nothing", "tide: saved some"]) {
       expect(scenes).toContain(s);
     }
     for (const e of ["main: full", "main: partial", "main: minimal", "promise: full", "promise: partial", "promise: minimal"]) expect(endings).toContain(e);

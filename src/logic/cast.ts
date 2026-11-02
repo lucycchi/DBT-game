@@ -11,6 +11,10 @@ export const CAST = {
   juno: { name: "Juno" },
   nell: { name: "Nell" },
   ash: { name: "Ash" },
+  iris: { name: "Iris" },
+  fen: { name: "Fen" },
+  hesketh: { name: "Hesketh" },
+  hettie: { name: "Hettie" },
 } as const;
 
 export type CharacterId = keyof typeof CAST;
