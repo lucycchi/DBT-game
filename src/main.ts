@@ -21,11 +21,14 @@ import { CHAPTER_NAMES, clearSave, readSave, writeSave, type SaveGame } from "./
 import { PlaytestLog } from "./playtest";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Phones and tablets get tap-first controls. ?touch forces it (for testing on a desktop).
+const touch = window.matchMedia("(pointer: coarse)").matches || new URLSearchParams(location.search).has("touch");
+document.body.classList.toggle("touch", touch);
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
 const sound = createSound();
 const dialogue = createDialogueBox($("#dialogue"), sound, reducedMotion);
-const hud = createHud($("#hud"), sound);
+const hud = createHud($("#hud"), sound, touch);
 const meter = createMeterView($("#meter"), reducedMotion);
 const panel = $("#panel");
 const titleCard = $("#title");
@@ -70,6 +73,8 @@ const hooks: SceneHooks = {
   sound,
   onArea: (a) => hud.showArea(a.name),
   onApproachEvent: (name, arg) => apply({ name, arg }),
+  onAction: (label, run) => hud.setAction(label, run),
+  touch,
 };
 
 function apply(ev: GameEvent) {

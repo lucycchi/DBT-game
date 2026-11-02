@@ -40,6 +40,10 @@ export interface ApproachResult {
 export interface SceneHooks {
   sound: Sound;
   onArea(area: Area): void;
+  /** The thing the player can do right now (for the on-screen action button), or null. */
+  onAction(label: string | null, run: (() => void) | null): void;
+  /** Touch screen: prompts drop the keyboard hint. */
+  touch: boolean;
   /** Story events caused by the player's body during the approach (posture, effort). */
   onApproachEvent(name: string, arg?: string): void;
 }
@@ -81,7 +85,13 @@ export class WorldScene extends Phaser.Scene {
   private insideZones = new Set<string>();
   private onPick: ((c: StoryChoice) => void) | null = null;
   private moveTo: number | null = null;
-  private pendingInteract = false;
+  /** What to do on arriving where the player tapped. */
+  private pendingAction: (() => void) | null = null;
+  /** What the prompt (and the action button) does right now. */
+  private promptAction: (() => void) | null = null;
+  private actionLabel: string | null = null;
+  /** In the lantern challenges: hang or tie the lantern at the nearest hook. */
+  private hookAction: (() => void) | null = null;
   private facing = 1;
   private walking = false;
   private stepClock = 0;
@@ -116,6 +126,10 @@ export class WorldScene extends Phaser.Scene {
     this.approaching = false;
     this.hanging = false;
     this.locked = true;
+    this.pendingAction = null;
+    this.promptAction = null;
+    this.actionLabel = null;
+    this.hookAction = null;
   }
 
   preload() {
@@ -185,6 +199,14 @@ export class WorldScene extends Phaser.Scene {
       emitting: false,
     }).setScrollFactor(0).setDepth(36);
     this.prompt = this.add.text(0, 0, "", { fontFamily: "Georgia, serif", fontSize: "20px", color: "#2a1a05", backgroundColor: "#f6e7c8", padding: { x: 10, y: 6 } }).setOrigin(0.5, 1).setDepth(50).setVisible(false);
+    // Tapping the prompt does what it says.
+    this.prompt.setInteractive({ useHandCursor: true }).on("pointerdown", (_: unknown, __: unknown, ___: unknown, ev: Phaser.Types.Input.EventData) => {
+      if (!this.promptAction) return;
+      ev?.stopPropagation?.();
+      this.promptAction();
+    });
+    // Hold Head up with one finger while tapping where to walk with another.
+    this.input.addPointer(2);
 
     const kb = this.input.keyboard!;
     this.keys = kb.addKeys("LEFT,RIGHT,A,D,E,SPACE,ENTER,SHIFT,UP,W") as Record<string, Phaser.Input.Keyboard.Key>;
@@ -194,7 +216,20 @@ export class WorldScene extends Phaser.Scene {
       if (this.locked && !this.approaching && !this.hanging) return;
       this.hooks.sound.unlock();
       this.moveTo = p.worldX;
-      this.pendingInteract = false;
+      this.pendingAction = null;
+      if (this.approaching) return;
+      // Tapping a hook (lantern challenges), or something you can use, walks there and does it.
+      if (this.hanging) {
+        const i = HOOKS.findIndex((h) => Math.abs(h.x - p.worldX) < 45 && p.worldY < groundY(h.x));
+        if (i >= 0) {
+          this.moveTo = HOOKS[i].x;
+          this.pendingAction = () => this.hookAction?.();
+        }
+        return;
+      }
+      const spots = [...this.targets.filter((t) => !t.auto).map((t) => t.x), ...DOORS.map((d) => d.x)];
+      const near = spots.find((x) => Math.abs(x - p.worldX) < 70);
+      if (near !== undefined) this.walkToAndInteract(near);
     });
 
     this.cameras.main.setBounds(0, 0, WORLD_W, VIEW_H);
@@ -304,7 +339,7 @@ export class WorldScene extends Phaser.Scene {
     this.targets = [];
     this.onPick = null;
     this.refreshBubbles();
-    this.prompt.setVisible(false);
+    this.hidePrompt();
   }
 
   setLocked(locked: boolean) {
@@ -312,7 +347,7 @@ export class WorldScene extends Phaser.Scene {
     this.locked = locked;
     if (locked) {
       this.moveTo = null;
-      this.prompt.setVisible(false);
+      this.hidePrompt();
     }
   }
 
@@ -347,7 +382,7 @@ export class WorldScene extends Phaser.Scene {
       const finish = (r: ApproachResult) => {
         this.events.off("update", tick);
         this.approaching = false;
-        this.prompt.setVisible(false);
+        this.hidePrompt();
         this.keys.E.off("down", stay);
         this.setLocked(true);
         this.applyState(this.world);
@@ -392,8 +427,8 @@ export class WorldScene extends Phaser.Scene {
         }
         if (!left && !right && this.player.x > 2980 && this.player.x < 3250) stillAtEdge += dt;
         else stillAtEdge = 0;
-        if (stillAtEdge > 2.5) this.showPrompt(this.player.x, "Press E to stay here, at the edge");
-        else this.showPrompt(mara.x, up ? "Keep going" : "Hold Shift: head up");
+        if (stillAtEdge > 2.5) this.showPrompt(this.player.x, "Stay here, at the edge", stay);
+        else this.showPrompt(mara.x, up ? "Keep going" : this.hooks.touch ? "Hold Head up" : "Hold Shift: head up");
 
         if (this.player.x <= mara.x + 90) finish({ reached: true, headUp: heldHeadUp(headUp, walk), turnedBack: false });
         else if (this.player.x >= ZONES.hollow.x0) finish({ reached: false, headUp: false, turnedBack: true });
@@ -421,24 +456,21 @@ export class WorldScene extends Phaser.Scene {
         if (hung === HOOKS.length) {
           this.events.off("update", tick);
           for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].off("down", tryHang);
+          this.hookAction = null;
           this.hanging = false;
-          this.prompt.setVisible(false);
+          this.hidePrompt();
           this.setLocked(true);
           resolve();
         }
       };
       const tick = () => {
         const i = this.nearestHook();
-        if (i >= 0 && !this.hookLanterns[i].visible) this.showPrompt(HOOKS[i].x, "E  Hang a lantern");
+        if (i >= 0 && !this.hookLanterns[i].visible) this.showPrompt(HOOKS[i].x, "Hang a lantern", tryHang);
         else this.showPrompt(this.player.x, `${HOOKS.length - hung} lanterns left`);
         this.player.x = Phaser.Math.Clamp(this.player.x, 2150, 2950);
       };
       for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].on("down", tryHang);
-      this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
-        if (!this.hanging) return;
-        const i = HOOKS.findIndex((h) => Math.abs(h.x - p.worldX) < 30 && Math.abs(p.worldY - h.y) < 80);
-        if (i >= 0 && Math.abs(this.player.x - HOOKS[i].x) < 60) tryHang();
-      });
+      this.hookAction = tryHang;
       this.events.on("update", tick);
     });
   }
@@ -464,8 +496,9 @@ export class WorldScene extends Phaser.Scene {
         if (tied === todo.length) {
           this.events.off("update", tick);
           for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].off("down", tryTie);
+          this.hookAction = null;
           this.hanging = false;
-          this.prompt.setVisible(false);
+          this.hidePrompt();
           this.setLocked(true);
           resolve();
         }
@@ -477,10 +510,11 @@ export class WorldScene extends Phaser.Scene {
         if (this.moveTo === null) this.player.x += this.gust * dt;
         this.player.x = Phaser.Math.Clamp(this.player.x, 2150, 2950);
         const i = this.nearestHook();
-        if (i >= 0 && todo.includes(i) && !this.hookLanterns[i].getData("tied")) this.showPrompt(HOOKS[i].x, "E  Tie it down");
+        if (i >= 0 && todo.includes(i) && !this.hookLanterns[i].getData("tied")) this.showPrompt(HOOKS[i].x, "Tie it down", tryTie);
         else this.showPrompt(this.player.x, `${todo.length - tied} to tie down`);
       };
       for (const k of ["E", "SPACE", "ENTER", "UP", "W"]) this.keys[k].on("down", tryTie);
+      this.hookAction = tryTie;
       this.events.on("update", tick);
     });
   }
@@ -501,7 +535,7 @@ export class WorldScene extends Phaser.Scene {
   /** Testing aid: walk the player to x as if they had clicked there. */
   debugWalkTo(x: number, interact = false) {
     this.moveTo = x;
-    this.pendingInteract = interact;
+    this.pendingAction = interact ? () => this.interact() : null;
   }
 
   // --- Frame loop -------------------------------------------------------------
@@ -549,10 +583,9 @@ export class WorldScene extends Phaser.Scene {
       const d = this.moveTo - this.player.x;
       if (Math.abs(d) < 8) {
         this.moveTo = null;
-        if (this.pendingInteract) {
-          this.pendingInteract = false;
-          this.interact();
-        }
+        const arrived = this.pendingAction;
+        this.pendingAction = null;
+        arrived?.();
       } else vx = Math.sign(d) * WALK_SPEED;
     }
     if (this.world.pull && !this.hanging) vx += PULL_DRIFT;
@@ -604,14 +637,30 @@ export class WorldScene extends Phaser.Scene {
 
   private updatePrompt() {
     const t = this.nearestTarget();
-    if (t) return this.showPrompt(t.x, `E  ${t.label}`);
+    if (t) return this.showPrompt(t.x, t.label, () => this.interact());
     const door = this.nearestDoor();
-    if (door) return this.showPrompt(door.x, `E  Go into ${door.label}`);
-    this.prompt.setVisible(false);
+    if (door) return this.showPrompt(door.x, `Go into ${door.label}`, () => this.interact());
+    this.hidePrompt();
   }
 
-  private showPrompt(x: number, text: string) {
-    this.prompt.setText(text).setPosition(x, groundY(x) - 190).setVisible(true);
+  /** A label over the world. With an action, it's tappable and drives the action button. */
+  private showPrompt(x: number, text: string, action?: () => void) {
+    const shown = action && !this.hooks.touch ? `E  ${text}` : text;
+    this.prompt.setText(shown).setPosition(x, groundY(x) - 190).setVisible(true);
+    this.promptAction = action ?? null;
+    this.setActionButton(action ? text : null);
+  }
+
+  private hidePrompt() {
+    this.prompt.setVisible(false);
+    this.promptAction = null;
+    this.setActionButton(null);
+  }
+
+  private setActionButton(label: string | null) {
+    if (label === this.actionLabel) return;
+    this.actionLabel = label;
+    this.hooks.onAction(label, label ? () => this.promptAction?.() : null);
   }
 
   private interact() {
@@ -634,8 +683,8 @@ export class WorldScene extends Phaser.Scene {
   private walkToAndInteract(x: number) {
     if (this.locked) return;
     this.hooks.sound.unlock();
-    this.moveTo = x + (x > this.player.x ? -60 : 60);
-    this.pendingInteract = true;
+    this.moveTo = x + (x > this.player.x ? -50 : 50);
+    this.pendingAction = () => this.interact();
   }
 
   private pick(choice: StoryChoice) {

@@ -212,7 +212,6 @@ kbd {
 .title-card .fine { font-size: 0.75em; opacity: 0.8; }
 
 @media (max-width: 720px) {
-  body { place-items: start center; overflow: auto; }
   #stage { border-radius: 0; }
   .hud-goal { max-width: 46cqw; }
   #meter { width: 26cqw; }
@@ -255,3 +254,63 @@ kbd {
 .continue-row { display: flex; flex-direction: column; align-items: center; gap: 0.3em; margin-bottom: 1em; }
 .continue-row .primary { font-size: 1.1em; padding: 0.75em 1.6em; }
 .continue-row .saved-at { color: var(--muted); font-size: 0.85em; }
+
+/* ---- Touch screens and phones ---- */
+body { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#stage { width: min(100vw, calc(100dvh * 16 / 9)); }
+#game canvas { touch-action: none; }
+.touch-only { display: none; }
+body.touch .touch-only { display: block; }
+body.touch .key-only { display: none; }
+body.touch kbd { display: none; }
+
+.hud-action {
+  position: absolute; right: 2cqw; bottom: 4.5cqw; min-width: 16cqw; min-height: 44px;
+  font-family: var(--serif); font-size: max(15px, 1.5cqw); font-weight: 600;
+  padding: 0.9cqw 1.8cqw; border-radius: 999px; border: 2px solid #fff3c4;
+  background: var(--amber); color: var(--ink-dark); box-shadow: 0 6px 20px #0008;
+  animation: rise-in 0.2s ease-out;
+}
+@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } }
+/* Head up goes under the left thumb, the action button under the right. */
+.hud-headup { right: auto; left: 2cqw; min-height: 52px; min-width: 18cqw; }
+.hud-headup, .dented, .breath-btn { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none; }
+.hud-fullscreen { position: absolute; right: 8.5cqw; bottom: 1.2cqw; font-size: max(13px, 1cqw); padding: 0.3cqw 0.8cqw; background: #120f1cc0; }
+#dialogue { max-height: 62%; overflow-y: auto; }
+#title { overflow-y: auto; align-items: start; }
+.title-card { margin: auto 0; }
+
+/* Phone held upright: ask for landscape. */
+#rotate { display: none; }
+@media (orientation: portrait) and (max-width: 900px) {
+  body.touch #rotate {
+    display: grid; place-items: center; position: fixed; inset: 0; z-index: 50;
+    background: var(--bg); color: var(--paper); font-family: var(--serif); font-size: 1.3rem; text-align: center; padding: 2rem;
+  }
+  body.touch #rotate p::before { content: "⟲"; display: block; font-size: 3rem; color: var(--amber); margin-bottom: 0.5rem; }
+}
+
+/* Small screens (phones in landscape): tighter HUD. */
+@container (max-width: 900px) {
+  .hud-goal { max-width: 38cqw; padding: 0.6cqw 1cqw; }
+  .hud-next li.hint { display: none; }
+  #meter { width: 22cqw; }
+  .curve { display: none; }
+  .hud-controls { display: none; }
+  .hud-area { top: 9cqw; }
+  #dialogue { width: 84cqw; bottom: 1cqw; padding: 1cqw 1.2cqw; }
+  .dlg-portrait svg { min-width: 48px; min-height: 56px; width: 6cqw; height: 7cqw; }
+  .panel-card { width: 90cqw; padding: 1.4cqw 1.8cqw; }
+  .title-card { max-width: 92cqw; }
+  .title-card h1 { font-size: 2.6em; }
+  .how { line-height: 1.6; }
+}
+
+/* Phones: conversations sit at the top, above the characters, and the HUD steps aside. */
+@container (max-width: 900px) {
+  #dialogue:not([data-mode="roam"]) { top: 1cqw; bottom: auto; max-height: 58%; animation: drop 0.25s ease-out; }
+  #stage:has(#dialogue:not([hidden]):not([data-mode="roam"])) :is(.hud-goal, #meter, .hud-toast) { visibility: hidden; }
+  .dlg-text { font-size: 0.95em; line-height: 1.4; }
+  .choice { padding: 0.45em 0.8em; }
+}
+@keyframes drop { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }

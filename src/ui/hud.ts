@@ -6,6 +6,8 @@ import type { Sound } from "../audio/sound";
 
 export interface Hud {
   setGoal(text: string): void;
+  /** The on-screen action button: what tapping it does right now, or hidden. */
+  setAction(label: string | null, run: (() => void) | null): void;
   setNext(choices: StoryChoice[]): void;
   showArea(name: string): void;
   controls(mode: "walk" | "approach" | "hang" | "hidden"): void;
@@ -13,12 +15,14 @@ export interface Hud {
   toast(node: HTMLElement, ms?: number): void;
 }
 
-export function createHud(root: HTMLElement, sound: Sound): Hud {
+export function createHud(root: HTMLElement, sound: Sound, touch: boolean): Hud {
   root.innerHTML = `
     <div class="hud-goal"><span class="hud-label">Goal</span><p>Light up the square for the lantern festival.</p><ul class="hud-next"></ul></div>
     <div class="hud-area" aria-live="polite"></div>
     <div class="hud-controls"></div>
     <button class="hud-headup" hidden>Head up</button>
+    <button class="hud-action" hidden></button>
+    <button class="hud-fullscreen" hidden>Full screen</button>
     <button class="hud-sound" aria-label="Sound"></button>
     <div class="hud-toast" aria-live="polite"></div>`;
   const next = root.querySelector<HTMLElement>(".hud-next")!;
@@ -27,7 +31,23 @@ export function createHud(root: HTMLElement, sound: Sound): Hud {
   const headUp = root.querySelector<HTMLButtonElement>(".hud-headup")!;
   const soundBtn = root.querySelector<HTMLButtonElement>(".hud-sound")!;
   const toastEl = root.querySelector<HTMLElement>(".hud-toast")!;
+  const action = root.querySelector<HTMLButtonElement>(".hud-action")!;
+  const fullscreen = root.querySelector<HTMLButtonElement>(".hud-fullscreen")!;
   let headUpHandler: (on: boolean) => void = () => {};
+  let actionRun: (() => void) | null = null;
+  action.addEventListener("click", () => {
+    sound.unlock();
+    actionRun?.();
+  });
+  // Full screen helps on phones that support it (not iPhone Safari, which hides the button).
+  const stage = root.parentElement!;
+  if (document.fullscreenEnabled && touch) {
+    fullscreen.hidden = false;
+    fullscreen.addEventListener("click", () => {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void stage.requestFullscreen().catch(() => {});
+    });
+  }
   let areaTimer: number | undefined;
 
   const paintSound = () => {
@@ -49,18 +69,30 @@ export function createHud(root: HTMLElement, sound: Sound): Hud {
   headUp.addEventListener("pointerdown", press(true));
   for (const ev of ["pointerup", "pointerleave", "pointercancel"]) headUp.addEventListener(ev, press(false));
 
-  const CONTROLS = {
-    walk: "<kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk, use, enter · or click where to go",
-    approach: "<kbd>←</kbd> walk toward Mara · hold <kbd>Shift</kbd> (or the Head up button) to keep your head up",
-    hang: "Walk under each hook and press <kbd>E</kbd>",
-    hidden: "",
-  };
+  const CONTROLS = touch
+    ? {
+        walk: "Tap where to go · tap people and things to talk or use them",
+        approach: "Tap toward Mara to walk · hold Head up with your other thumb",
+        hang: "Tap a hook to walk there, then tap the button",
+        hidden: "",
+      }
+    : {
+        walk: "<kbd>←</kbd><kbd>→</kbd> or <kbd>A</kbd><kbd>D</kbd> walk · <kbd>E</kbd> talk, use, enter · or click where to go",
+        approach: "<kbd>←</kbd> walk toward Mara · hold <kbd>Shift</kbd> (or the Head up button) to keep your head up",
+        hang: "Walk under each hook and press <kbd>E</kbd>",
+        hidden: "",
+      };
 
   const goal = root.querySelector<HTMLElement>(".hud-goal p")!;
 
   return {
     setGoal(text) {
       goal.textContent = text;
+    },
+    setAction(label, run) {
+      actionRun = run;
+      action.hidden = !label;
+      action.textContent = label ?? "";
     },
     setNext(choices) {
       next.replaceChildren();

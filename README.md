@@ -32,6 +32,14 @@ Design decisions are in [DESIGN.md](DESIGN.md), the cast and dialogue rules in
 The goal and what to do next are always shown in the top left. People with a speech bubble
 want to talk.
 
+**On a phone or tablet** (landscape; portrait asks you to turn the phone): tap where you want
+to go, tap a person, door, thing or lantern hook to walk over and use it, and tap the text to
+read on. Whenever there's something to do, a big button in the bottom right does it (the
+floating label over the world is tappable too). During the walk back, hold **Head up** with
+your left thumb while tapping toward Mara with your right. Conversations move to the top of
+the screen so they don't cover anyone. Add `?touch` to the URL to try the touch layout on a
+desktop.
+
 ## The journey
 
 Four connected areas you can walk between and come back to: **Lantern Lane** (your house,
