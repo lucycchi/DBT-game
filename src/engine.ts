@@ -59,6 +59,15 @@ export class Engine {
     this.setVar("variant", variant);
   }
 
+  /** The story's full position and variables, for a save point. */
+  saveState(): string {
+    return this.story.state.ToJson();
+  }
+
+  loadState(json: string): void {
+    this.story.state.LoadJson(json);
+  }
+
   /** Start somewhere other than the beginning, e.g. a chapter. */
   startAt(knot: string): void {
     this.story.ChoosePathString(knot);

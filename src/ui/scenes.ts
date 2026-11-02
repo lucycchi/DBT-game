@@ -264,6 +264,38 @@ export function runBreathScene(panel: HTMLElement, sound: Sound, onBreath: () =>
   });
 }
 
+// --- Save points between chapters -----------------------------------------------
+
+/** Tell the player their progress is saved, and let them keep going or take a break. */
+export function runSaveScene(panel: HTMLElement, finished: string, next: string, saved: boolean): Promise<"continue" | "break"> {
+  return new Promise((resolve) => {
+    const keep = button("Keep playing", "primary", () => {
+      closePanel(panel);
+      resolve("continue");
+    });
+    const rest = button("Take a break", "ghost", () => {
+      closePanel(panel);
+      resolve("break");
+    });
+    openPanel(
+      panel,
+      h("p", { class: "eyebrow", text: "Save point" }),
+      h("h2", { text: `${finished} complete` }),
+      h(
+        "p",
+        {
+          class: "save-note",
+          text: saved
+            ? `Your progress is saved in this browser. You can close the tab now and come back any time: choose "Continue" on the title screen to start ${next}.`
+            : "This browser isn't letting the game save (a private window can do this), so progress will be lost if you close the tab.",
+        },
+      ),
+      h("div", { class: "row" }, keep, ...(saved ? [rest] : [])),
+    );
+    keep.focus();
+  });
+}
+
 // --- Mending -------------------------------------------------------------------
 
 /** Patch the torn lantern (borrowed-lantern story) or bend the dented ones back. */

@@ -16,7 +16,8 @@ import { GROUND_Y, VIEW_H, VIEW_W } from "./game/layout";
 import { createDialogueBox } from "./ui/dialogue";
 import { createHud } from "./ui/hud";
 import { createMeterView } from "./ui/meter";
-import { factCard, runBreathScene, runChainScene, runCheckInScene, runFitScene, runMendScene } from "./ui/scenes";
+import { factCard, runBreathScene, runChainScene, runCheckInScene, runFitScene, runMendScene, runSaveScene } from "./ui/scenes";
+import { CHAPTER_NAMES, clearSave, readSave, writeSave, type SaveGame } from "./save";
 import { PlaytestLog } from "./playtest";
 
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -140,17 +141,21 @@ function waitForChoice(choices: StoryChoice[]): Promise<StoryChoice> {
   });
 }
 
-async function play(chosen: Variant, from?: string) {
-  variant = chosen;
-  state = initialState();
+const CHAPTER_ORDINAL = { 2: "chapter two", 3: "chapter three" } as const;
+const FINISHED = { 2: "Chapter one", 3: "Chapter two" } as const;
+
+async function play(chosen: Variant, from?: string, resume?: SaveGame) {
+  variant = resume?.variant ?? chosen;
+  state = resume?.game ?? initialState();
   meter.render(state.meter);
-  showChapter(1);
+  showChapter(state.world.level);
   const engine = new Engine(await storyJson, variant, () => state.meter.distress);
-  if (from) engine.startAt(from);
+  if (resume) engine.loadState(resume.story);
+  else if (from) engine.startAt(from);
   const log = new PlaytestLog(variant);
   await bootWorld();
   hud.onHeadUp((on) => world!.setHeadUp(on));
-  log.record("start", { variant });
+  log.record("start", { variant, from, resumedChapter: resume?.chapter });
 
   while (true) {
     let scene: StoryLine["scene"] = null;
@@ -168,6 +173,24 @@ async function play(chosen: Variant, from?: string) {
       } else {
         await dialogue.say(line.text, null);
       }
+    }
+
+    if (scene === "save") {
+      // Save at the start of the next chapter, so resuming begins there.
+      dialogue.hide();
+      hud.setNext([]);
+      const next = Number(engine.getVar("next_chapter")) as 2 | 3;
+      engine.choose(0);
+      const saved = writeSave({ chapter: next, variant, story: engine.saveState(), game: state });
+      log.record("save", { chapter: next, saved });
+      const choice = await runSaveScene(panel, FINISHED[next], CHAPTER_ORDINAL[next], saved);
+      if (choice === "break") {
+        log.record("break", { chapter: next });
+        sound.setMood("silent");
+        showTitle();
+        return;
+      }
+      continue;
     }
 
     if (scene) {
@@ -230,6 +253,7 @@ async function play(chosen: Variant, from?: string) {
   }
 
   log.record("end");
+  clearSave();
   dialogue.hide();
   showEnd(log);
 }
@@ -246,7 +270,7 @@ function showEnd(log: PlaytestLog) {
   again.textContent = "Play again";
   again.addEventListener("click", () => {
     panel.hidden = true;
-    titleCard.hidden = false;
+    showTitle();
   });
   const notes = document.createElement("button");
   notes.className = "ghost";
@@ -260,11 +284,26 @@ function showEnd(log: PlaytestLog) {
   panel.hidden = false;
 }
 
-function begin(v: Variant, from?: string) {
+/** The title screen, with a Continue button when there's a save to go back to. */
+function showTitle() {
+  const save = readSave();
+  const row = $("#continue-row");
+  row.hidden = !save;
+  $("#start-main").className = save ? "ghost" : "primary";
+  if (save) {
+    $("#continue").textContent = `Continue ${CHAPTER_NAMES[save.chapter]}`;
+    const when = new Date(save.savedAt);
+    $(".saved-at").textContent = Number.isNaN(when.getTime()) ? "" : `Saved ${when.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
+  }
+  dialogue.hide();
+  titleCard.hidden = false;
+}
+
+function begin(v: Variant, from?: string, resume?: SaveGame) {
   sound.unlock();
   sound.play("ui");
   titleCard.hidden = true;
-  play(v, from).catch((err) => {
+  play(v, from, resume).catch((err) => {
     console.error(err);
     void dialogue.say(String(err instanceof Error ? err.message : err), null);
   });
@@ -274,6 +313,16 @@ $("#start-main").addEventListener("click", () => begin("main"));
 $("#start-promise").addEventListener("click", () => begin("promise"));
 $("#start-ch2").addEventListener("click", () => begin("main", "start_day_two"));
 $("#start-ch3").addEventListener("click", () => begin("main", "start_storm"));
+$("#continue").addEventListener("click", () => {
+  const save = readSave();
+  if (save) begin(save.variant, undefined, save);
+  else showTitle();
+});
+$("#start-over").addEventListener("click", () => {
+  clearSave();
+  showTitle();
+});
+showTitle();
 window.addEventListener("pointerdown", () => sound.unlock(), { once: true });
 window.addEventListener("keydown", () => sound.unlock(), { once: true });
 

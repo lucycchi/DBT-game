@@ -76,6 +76,13 @@ you rested in chapter two sets how big the wave is.
 
 The title screen can jump straight to chapter two or three.
 
+**Save points.** The end of each chapter is a save point: the game saves your progress in
+this browser and offers *Keep playing* or *Take a break*. Next time, the title screen shows
+*Continue chapter two* (or three) with when you saved. *Start over* deletes the save, which
+is worth doing between participants on a shared playtest computer. Finishing the game clears
+the save. Saves hold the story's progress and the village's state only, never playtest notes,
+and a save from an older version of the game is ignored rather than loaded.
+
 Nothing is scored. The village shows the costs and the recoveries, and it can always recover.
 
 The borrowed-lantern story (second button on the title screen) changes one thing: you

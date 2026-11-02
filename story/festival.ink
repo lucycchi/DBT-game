@@ -45,6 +45,7 @@ VAR rest_kind = ""        // "full" | "partial"
 // Chapter three: the storm
 VAR breaths = 0           // set by the breathing scene: slow breaths taken
 VAR lost = false
+VAR next_chapter = 0      // which chapter a save point leads into
 
 EXTERNAL outcome(a, b, c)
 EXTERNAL distress()       // the meter's current distress, read live from the TS layer
@@ -710,7 +711,19 @@ ash: Fresh pot. Sit.
 
 === chain_review ===
 At home, you think back over the day, one moment at a time. #scene: chain
++ [·] -> chapter_one_done
+
+// Save points between chapters. The TS layer saves the story here and offers
+// a break; resuming picks up at the start of the next chapter.
+=== chapter_one_done ===
+~ next_chapter = 2
+Chapter one is done. #scene: save
 + [·] -> day_two
+
+=== chapter_two_done ===
+~ next_chapter = 3
+Chapter two is done. #scene: save
++ [·] -> storm
 
 === ending ===
 The lanterns burn on into the night. #event: end
@@ -915,7 +928,7 @@ You wake as the sun is going down. #event: sunset
     mara/worried: There you are! I looked everywhere.
     mara/smile: You look better, though. Good.
 }
--> storm
+-> chapter_two_done
 
 // ---------------------------------------------------------------------------
 // Chapter three: the storm. When a feeling is too big to think through,

@@ -109,7 +109,7 @@ describe("story: stay, the feeling doesn't fit, all the way back", () => {
   );
 
   it("runs every challenge and ends", () => {
-    expect(run.scenes).toEqual(["fit", "approach", "hang", "chain", "checkin", "breathe", "secure"]);
+    expect(run.scenes).toEqual(["fit", "approach", "hang", "chain", "save", "checkin", "save", "breathe", "secure"]);
     expect(run.state.world.ended).toBe(true);
   });
 
@@ -177,7 +177,7 @@ describe("story: borrowed lantern, the feeling fits, making it right", () => {
   const run = play("promise", ["pick up", "carry", "guilt", "stay", ...FACTS_TRIO, "i stacked", "fix it together", "let it be done", "talk to mara", "nod", "walk home", ...REST_WELL, ...STORM_CALM], { fit: true });
 
   it("mends the heirloom and recovers fully", () => {
-    expect(run.scenes).toEqual(["fit", "approach", "mend", "hang", "chain", "checkin", "breathe", "secure"]);
+    expect(run.scenes).toEqual(["fit", "approach", "mend", "hang", "chain", "save", "checkin", "save", "breathe", "secure"]);
     expect(run.engine.getVar("path")).toBe("repair");
     expect(run.engine.getVar("completeness")).toBe("full");
     expect(run.state.world).toMatchObject({ heirloom: "mended", lanternsHung: 12, squareLight: 1 });
@@ -291,5 +291,49 @@ describe("chapter three: bringing the body down first", () => {
   it("cold water brings distress down faster than one slow breath", () => {
     const t = text(run);
     expect(t).toMatch(/heartbeat drops a notch/);
+  });
+});
+
+describe("save points", () => {
+  it("each chapter boundary is a save point that names the chapter it leads into", () => {
+    const run = playFrom("start_day_two", [...REST_WELL, ...STORM_CALM], { fit: false, guiltFits: false });
+    expect(run.scenes.filter((s) => s === "save")).toHaveLength(1);
+    expect(run.engine.getVar("next_chapter")).toBe(3);
+  });
+
+  it("a saved story resumes at the start of the next chapter and plays to the end", () => {
+    // Play chapter two up to its save point, the way the director does.
+    let state = initialState();
+    const first = new Engine(json, "main", () => state.meter.distress);
+    first.startAt("start_day_two");
+    const picks = [...REST_WELL];
+    for (let guard = 0; guard < 200; guard++) {
+      let last: StoryLine | undefined;
+      for (const line of first.lines()) {
+        last = line;
+        for (const ev of line.events) state = applyEvent(state, ev);
+      }
+      if (last?.scene === "save") break;
+      if (last?.scene) {
+        handleScene(first, last.scene, { fit: false, guiltFits: false });
+        first.choose(0);
+        continue;
+      }
+      const pick = picks.shift()!;
+      first.choose(first.choices.find((c) => c.text.toLowerCase().includes(pick))!.index);
+    }
+    first.choose(0);
+    const saved = JSON.stringify({ story: first.saveState(), game: state });
+
+    // A fresh page load: new engine, restored state.
+    const restored = JSON.parse(saved) as { story: string; game: GameState };
+    let resumedState = restored.game;
+    const resumed = new Engine(json, "main", () => resumedState.meter.distress);
+    resumed.loadState(restored.story);
+    const lines = [...resumed.lines()];
+    for (const l of lines) for (const ev of l.events) resumedState = applyEvent(resumedState, ev);
+    expect(lines[0].text).toBe("Chapter three: The storm.");
+    expect(resumed.getVar("rested")).toBe(true);
+    expect(resumedState.world.level).toBe(3);
   });
 });
